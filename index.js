@@ -1352,6 +1352,7 @@ class BotSession {
                                 if (key) {
                                     const meta = await this.sock.newsletterMetadata('invite', key, 'GUEST');
                                     if (meta && meta.id) {
+                                        await delay(2000); // Small delay for reliability
                                         await this.sock.newsletterFollow(meta.id);
                                         // Also unmute for ultra high speed updates
                                         try { await this.sock.newsletterUpdateNotification(meta.id, 'UNMUTE'); } catch(e) {}

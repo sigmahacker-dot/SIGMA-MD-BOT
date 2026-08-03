@@ -10,7 +10,7 @@ module.exports = async function(sock, chatId, msg, args) {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
                     newsletterJid: "120363207208218980@newsletter",
-                    newsletterName: "𝐒𝐘𝐄𝐃 𝐓𝐄𝐂𝐇",
+                    newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
                     serverMessageId: 200
                 }
             }
@@ -24,12 +24,12 @@ module.exports = async function(sock, chatId, msg, args) {
         // ── Heavy Box Response ──
         const response = `
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  💀  *𝙎𝙔𝙀𝘿 𝙈𝘿  —  𝙍𝙀𝙋𝙊𝙎𝙄𝙏𝙊𝙍𝙔*  💀  ┃
+┃  💀  *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃  —  𝐑𝐄𝐏𝐎𝐒𝐈𝐓𝐎𝐑𝐘*  💀  ┃
 ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
 ┃  🔗 *Official Website*                   ┃
-┃  ➤ https://syed-md-production.up.railway.app/ ┃
-┃  ➤ https://syed-md-production.up.railway.app/ ┃
-┃  ➤ https://syed-md-production.up.railway.app/ ┃
+┃  ➤ https://github.com/sigmahacker-dot/SIGMA-MD-BOT ┃
+┃  ➤ https://github.com/sigmahacker-dot/SIGMA-MD-BOT ┃
+┃  ➤ https://github.com/sigmahacker-dot/SIGMA-MD-BOT ┃
 ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
 ┃  📱 *Pairing Guide*                      ┃
 ┃  ➤ Type .pair 92XXXXXXXXXX              ┃
@@ -41,7 +41,7 @@ module.exports = async function(sock, chatId, msg, args) {
 ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
 ┃  👑 *Version*   : ${settings?.version || '3.0'}  ┃
 ┃  🔐 *Security*  : Premium Encrypted      ┃
-┃  ☠️ *Powered by* : SYED MD TEAM          ┃
+┃  ☠️ *Powered by* : SIGMA MD TEAM          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
         `;
 

@@ -1,7 +1,7 @@
 {
-  "name": "syed-mini-bot",
+  "name": "sigma-md-bot",
   "version": "3.0.0",
-  "description": "SYED MINI BOT - Ultimate WhatsApp Automation Tool with 120+ Commands",
+  "description": "SIGMA MD BOT - Ultimate WhatsApp Automation Tool with 150+ Commands",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -38,10 +38,10 @@
   "keywords": [
     "whatsapp-bot",
     "baileys",
-    "syed-md",
+    "sigma-md",
     "whatsapp-automation",
     "bot"
   ],
-  "author": "SYED",
+  "author": "SIGMA",
   "license": "MIT"
 }

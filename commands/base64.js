@@ -21,7 +21,7 @@ module.exports = async function(sock, chatId, msg, q) {
                 text: `🔐 *SHADOW BASE64 ENCODER* 🔐\n\n` +
                       `📝 *Original:* ${text}\n` +
                       `🔒 *Encoded:*\n\`${result}\`\n\n` +
-                      `_Powered by Shadow MD Bot_` 
+                      `_Powered by 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓_` 
             }, { quoted: msg });
         } else if (action === 'dec' || action === 'decode') {
             try {
@@ -30,7 +30,7 @@ module.exports = async function(sock, chatId, msg, q) {
                     text: `🔓 *SHADOW BASE64 DECODER* 🔓\n\n` +
                           `🔒 *Encoded:* ${text}\n` +
                           `📝 *Decoded:*\n\`${result}\`\n\n` +
-                          `_Powered by Shadow MD Bot_` 
+                          `_Powered by 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓_` 
                 }, { quoted: msg });
             } catch (e) {
                 await sock.sendMessage(chatId, { text: '❌ Invalid Base64 string!' }, { quoted: msg });

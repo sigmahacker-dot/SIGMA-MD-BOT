@@ -25,7 +25,7 @@ module.exports = async function(sock, chatId, msg, q) {
             const caption = `*\u25B6\uFE0F ${videoData.title}*\n\n` +
                 `\u23F1\uFE0F Duration: ${videoData.duration || 'N/A'}\n` +
                 `\u1F517 Link: ${videoUrl}\n\n` +
-                `> © POWERED BY SHADOW MD BOT`;
+                `> © POWERED BY 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓`;
 
             // Send Video
             await sock.sendMessage(chatId, { 

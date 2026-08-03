@@ -1,4 +1,4 @@
-# SHADOW MD BOT v3.0
+# 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 v3.0
 
 Ultimate WhatsApp Automation Tool with 120+ Commands
 
@@ -50,7 +50,7 @@ npm start
 
 Access at `http://localhost:3000`
 
-Default password: `syed_techteaM`
+Default password: `sigma_techteaM`
 
 ## License
 

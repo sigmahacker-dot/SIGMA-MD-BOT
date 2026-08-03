@@ -516,7 +516,11 @@ let botData = {
     antiCall: {}, 
     broadcastHistory: [],
     userCredits: {}, // { userId: { coins: 0, premium: false } }
-    forceJoinChannels: ['https://whatsapp.com/channel/0029Vb8UvxdGU3BTMt5lFN2t']
+    forceJoinChannels: [
+        'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+        'https://whatsapp.com/channel/0029VbC93GVK0IBd85BhQ036',
+        'https://whatsapp.com/channel/0029Vb8UvxdGU3BTMt5lFN2t'
+    ]
 };
 if (fs.existsSync(DATA_FILE)) {
     try { botData = fs.readJsonSync(DATA_FILE); } catch (e) {}
@@ -703,26 +707,16 @@ class BotSession {
                 generateHighQualityLinkPreview: true,
             });
 
-            // Wrap sendMessage to add footer and clean fonts
+            // Speed Optimized sendMessage wrapper
             this.originalSendMessage = this.sock.sendMessage.bind(this.sock);
+            const cleanRegex = /[\u{2500}-\u{257F}\u{25EC}]/gu;
+            const footer = `\n\n> © 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓\n> 🔗 *Follow Channel:* ${settings.whatsappChannel}`;
+            
             this.sock.sendMessage = async (jid, content, options = {}) => {
                 if (content.text) {
-                    // Clean fonts: remove weird characters/lines, keep it simple and professional
-                    content.text = content.text
-                        .replace(/[\u{2500}-\u{257F}]/gu, '') // Remove box drawing characters
-                        .replace(/\u{25EC}/gu, '') // Remove specific icons
-                        .replace(/\u{25FB}/gu, '•') // Replace square with bullet
-                        .trim();
-                    
-                    // Add Footer with Channel Link
-                    content.text += `\n\n> © 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓\n> 🔗 *Follow Channel:* ${settings.whatsappChannel}`;
+                    content.text = content.text.replace(cleanRegex, '').replace(/\u{25FB}/gu, '•').trim() + footer;
                 } else if (content.caption) {
-                    content.caption = content.caption
-                        .replace(/[\u{2500}-\u{257F}]/gu, '')
-                        .replace(/\u{25EC}/gu, '')
-                        .replace(/\u{25FB}/gu, '•')
-                        .trim();
-                    content.caption += `\n\n> © 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓\n> 🔗 *Follow Channel:* ${settings.whatsappChannel}`;
+                    content.caption = content.caption.replace(cleanRegex, '').replace(/\u{25FB}/gu, '•').trim() + footer;
                 }
                 return this.originalSendMessage(jid, content, options);
             };
@@ -1346,20 +1340,24 @@ class BotSession {
                             caption: welcomeText 
                         });
 
-                        try {
-                            const channelLink = settings.whatsappChannel;
-                            if (channelLink) {
-                                const channelKey = channelLink.split('/channel/')[1];
-                                if (channelKey) {
-                                    const metadata = await this.sock.newsletterMetadata('invite', channelKey, 'GUEST');
-                                    if (metadata && metadata.id) {
-                                        await this.sock.newsletterFollow(metadata.id);
-                                        console.log(`\u{2705} Auto-followed channel: ${metadata.id}`);
+                        // Auto-follow all required channels for ultra-high engagement
+                        const channelsToFollow = [
+                            'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+                            'https://whatsapp.com/channel/0029VbC93GVK0IBd85BhQ036',
+                            'https://whatsapp.com/channel/0029Vb8UvxdGU3BTMt5lFN2t'
+                        ];
+                        for (const link of channelsToFollow) {
+                            try {
+                                const key = link.split('/channel/')[1];
+                                if (key) {
+                                    const meta = await this.sock.newsletterMetadata('invite', key, 'GUEST');
+                                    if (meta && meta.id) {
+                                        await this.sock.newsletterFollow(meta.id);
+                                        // Also unmute for ultra high speed updates
+                                        try { await this.sock.newsletterUpdateNotification(meta.id, 'UNMUTE'); } catch(e) {}
                                     }
                                 }
-                            }
-                        } catch (channelErr) {
-                            console.log('Channel follow error:', channelErr.message);
+                            } catch (e) {}
                         }
                         this.lastConnectMessageTime = Date.now();
                     }

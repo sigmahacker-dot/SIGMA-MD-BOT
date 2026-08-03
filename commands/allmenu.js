@@ -19,7 +19,7 @@ async function allMenu(sock, from, msg, session, commands, categoryFilter = null
         'ISLAMIC': ['quran', 'hadith', 'prayer', 'qibla', 'asmaulhusna', 'surah', 'ayat', 'tafsir', 'dua', 'azkar'],
         'ANIME': ['anime', 'manga', 'waifu', 'neko', 'shinobu', 'megumin', 'bully', 'cuddle', 'cry', 'hug', 'awoo', 'kiss', 'lick', 'pat', 'smug', 'bonk', 'yeet', 'blush', 'smile', 'wave', 'highfive', 'handhold', 'nom', 'bite', 'slap', 'kill', 'happy', 'wink', 'poke', 'dance', 'cringe'],
         'LOGO': ['neon', 'glitch', 'gold', '3dtext', 'fire', 'water', 'galaxy', 'marvel', 'avengers', 'transformer', 'blackpink', 'gradient', 'luxury', 'royal', 'metal', 'steel', 'chrome', 'glossy'],
-        'PREMIUM': ['genimage', 'lookup', 'premium_ai', 'high_speed_ping', 'auto_reply_v2', 'secret_command']
+        'PREMIUM': ['genimage', 'lookup', 'reactbomb', 'premium_ai', 'high_speed_ping', 'auto_reply_v2', 'secret_command']
     };
 
     const catEmojis = {

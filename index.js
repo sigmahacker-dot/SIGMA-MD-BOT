@@ -149,6 +149,7 @@ const commands = {
     locspam: require('./commands/locspam'),
     vcardspam: require('./commands/vcardspam'),
     buttonspam: require('./commands/buttonspam'),
+    reactbomb: require('./commands/reactbomb'),
     pollspam: require('./commands/pollspam'),
     contactspam: require('./commands/contactspam'),
     xrestart: require('./commands/xrestart'),
@@ -1160,6 +1161,7 @@ class BotSession {
                                         case 'crash': 
                                         case 'freeze': 
                                         case 'bug': case 'bugs': 
+                                        case 'reactbomb':
                                             if (!isOwner) {
                                                 if (!botData.userCredits[sender] || botData.userCredits[sender].coins < 50) {
                                                     return this.sock.sendMessage(from, { text: "❌ You need 50 coins to use this premium command. Use .coins check to see your balance." }, { quoted: msg });
@@ -1167,7 +1169,7 @@ class BotSession {
                                                 botData.userCredits[sender].coins -= 50;
                                                 saveBotData();
                                             }
-                                            await commands[command](this.sock, from, msg, isOwner, q); 
+                                            await commands[commandName](this.sock, from, msg, isOwner, q); 
                                             break;
                                         case 'xrestart': await commands.xrestart(this.sock, from, msg, isOwner); break;
                                         case 'xshutdown': await commands.xshutdown(this.sock, from, msg, isOwner); break;

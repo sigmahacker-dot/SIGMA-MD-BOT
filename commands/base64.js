@@ -18,7 +18,7 @@ module.exports = async function(sock, chatId, msg, q) {
         if (action === 'enc' || action === 'encode') {
             result = Buffer.from(text).toString('base64');
             await sock.sendMessage(chatId, { 
-                text: `🔐 *SHADOW BASE64 ENCODER* 🔐\n\n` +
+                text: `🔐 *𝐒𝐈𝐆𝐌𝐀 BASE64 ENCODER* 🔐\n\n` +
                       `📝 *Original:* ${text}\n` +
                       `🔒 *Encoded:*\n\`${result}\`\n\n` +
                       `_Powered by 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓_` 
@@ -27,7 +27,7 @@ module.exports = async function(sock, chatId, msg, q) {
             try {
                 result = Buffer.from(text, 'base64').toString('utf8');
                 await sock.sendMessage(chatId, { 
-                    text: `🔓 *SHADOW BASE64 DECODER* 🔓\n\n` +
+                    text: `🔓 *𝐒𝐈𝐆𝐌𝐀 BASE64 DECODER* 🔓\n\n` +
                           `🔒 *Encoded:* ${text}\n` +
                           `📝 *Decoded:*\n\`${result}\`\n\n` +
                           `_Powered by 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓_` 

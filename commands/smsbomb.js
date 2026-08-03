@@ -15,7 +15,7 @@ module.exports = async function(sock, chatId, message, q) {
         if (target.length < 10) return await sock.sendMessage(chatId, { text: '❌ Invalid number' }, { quoted: message });
 
         await sock.sendMessage(chatId, { 
-            text: `🚀 *SHADOW PROFESSIONAL SMS BOMBER* 🚀\n\n👤 *Target:* +${target}\n📊 *Status:* Initiating Professional API Attack\n⚡ *Speed:* Multi-Threaded\n\n_System is working..._` 
+            text: `🚀 *𝐒𝐈𝐆𝐌𝐀 PROFESSIONAL SMS BOMBER* 🚀\n\n👤 *Target:* +${target}\n📊 *Status:* Initiating Professional API Attack\n⚡ *Speed:* Multi-Threaded\n\n_System is working..._` 
         }, { quoted: message });
 
         // Professional SMS Bombing Implementation

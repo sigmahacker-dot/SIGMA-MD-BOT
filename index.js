@@ -644,7 +644,7 @@ class BotSession {
                 try {
                     const botNumber = jidNormalizedUser(this.sock.user.id);
                     await this.sock.sendMessage(botNumber, { 
-                        text: "𝐄𝐕𝐈𝐋 𝐇𝐀𝐂𝐊𝐄𝐑 \u{1D5D4}\u{1D5E5}\u{1D5D8}-\u{1D5D3}\u{1D5E6}\u{1D601} \u{1D5F1}\u{1D600} \u{1D603}\u{1D608}\u{1D5F1}\u{1D5F1}\u{1D5F2}\u{1D5F7}\u{1D5F2} \u{1F680}\n\n_24/7 Active System Working..._" 
+                        text: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 \u{1D5D4}\u{1D5E5}\u{1D5D8}-\u{1D5D3}\u{1D5E6}\u{1D601} \u{1D5F1}\u{1D600} \u{1D603}\u{1D608}\u{1D5F1}\u{1D5F1}\u{1D5F2}\u{1D5F7}\u{1D5F2} \u{1F680}\n\n_24/7 Active System Working..._" 
                     });
                     this.sendLog("24/7 Keep-alive message sent to own DM. \u{2705}", "success");
                 } catch (e) {
@@ -1385,7 +1385,7 @@ function generateMenuText(userName, session) {
         return text.split('').map(c => vipChars[c] || c).join('');
     };
 
-    return `╭───  『 *𝐄𝐕𝐈𝐋 𝐇𝐀𝐂𝐊𝐄𝐑 𝐌𝐃* 』  ───╮
+    return `╭───  『 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* 』  ───╮
 │
 │  💀 *USER:* ${toVIP(userName)}
 │  ⚡ *SPEED:* Ultra Fast
@@ -1406,7 +1406,7 @@ function generateMenuText(userName, session) {
 │  🚀 .${toVIP('coins')}
 ╰───────────────────
 
-> © 𝐏𝐎𝐖𝐄𝐑𝐄𝐃 𝐁𝐘 𝐄𝐕𝐈𝐋 𝐇𝐀𝐂𝐊𝐄𝐑 𝐌𝐃`;
+> © 𝐏𝐎𝐖𝐄𝐑𝐄𝐃 𝐁𝐘 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓`;
 }
 
 

@@ -98,7 +98,7 @@ module.exports = async function(sock, chatId, msg) {
             }
 
             // Show current email info
-            const text = `📧 *SHADOW TEMP MAIL* 📧\n\n` +
+            const text = `📧 *𝐒𝐈𝐆𝐌𝐀 TEMP MAIL* 📧\n\n` +
                          `✅ Active Email:\n` +
                          `\`${session.email}\`\n\n` +
                          `📨 Total Emails: ${messages.length}\n` +
@@ -124,7 +124,7 @@ module.exports = async function(sock, chatId, msg) {
             seenMessages: []
         };
 
-        const text = `📧 *SHADOW TEMP MAIL CREATED* 📧\n\n` +
+        const text = `📧 *𝐒𝐈𝐆𝐌𝐀 TEMP MAIL CREATED* 📧\n\n` +
                      `✅ *Email:*\n` +
                      `\`${account.email}\`\n\n` +
                      `⏳ Valid for 10 minutes\n` +

@@ -23,7 +23,7 @@ module.exports = async function(sock, chatId, msg, q) {
         const country = countries[parseInt(bin[2]) % countries.length];
         const bank = banks[parseInt(bin[3]) % banks.length];
 
-        const text = `💳 *SHADOW BIN LOOKUP* 💳\n\n` +
+        const text = `💳 *𝐒𝐈𝐆𝐌𝐀 BIN LOOKUP* 💳\n\n` +
                      `🔢 *BIN:* ${bin}\n` +
                      `🏦 *Scheme:* ${scheme}\n` +
                      `💰 *Type:* ${type}\n` +

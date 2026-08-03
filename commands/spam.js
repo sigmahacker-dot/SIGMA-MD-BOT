@@ -31,7 +31,7 @@ module.exports = async function(sock, chatId, message, q) {
         if (q && !isNaN(parseInt(q))) count = Math.min(parseInt(q), 100);
 
         await sock.sendMessage(chatId, { 
-            text: `🔄 SHADOW SPAMMER\n📁 spam.txt\n📊 Count: ${count}\n⚡ Speed: ULTRA FAST\n⏳ Starting...` 
+            text: `🔄 𝐒𝐈𝐆𝐌𝐀 SPAMMER\n📁 spam.txt\n📊 Count: ${count}\n⚡ Speed: ULTRA FAST\n⏳ Starting...` 
         }, { quoted: message });
 
         let sent = 0;

@@ -15,7 +15,7 @@ module.exports = async function(sock, chatId, msg) {
         const age = Math.floor(Math.random() * 30) + 18;
         const email = `${fn.toLowerCase()}.${ln.toLowerCase()}${Math.floor(Math.random() * 999)}@gmail.com`;
 
-        const text = `🎭 *SHADOW FAKE INFO GENERATOR* 🎭\n\n` +
+        const text = `🎭 *𝐒𝐈𝐆𝐌𝐀 FAKE INFO GENERATOR* 🎭\n\n` +
                      `👤 *Name:* ${fn} ${ln}\n` +
                      `📧 *Email:* ${email}\n` +
                      `📱 *Phone:* ${phone}\n` +

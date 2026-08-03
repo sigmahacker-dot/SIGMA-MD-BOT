@@ -19,7 +19,7 @@ module.exports = async function(sock, chatId, msg, q) {
             const response = await axios.get(`https://ipapi.co/${ip}/json/`, { timeout: 5000 });
             const data = response.data;
 
-            const text = `🌐 *SHADOW IP INFO* 🌐\n\n` +
+            const text = `🌐 *𝐒𝐈𝐆𝐌𝐀 IP INFO* 🌐\n\n` +
                          `📍 *IP:* ${data.ip || ip}\n` +
                          `🏙️ *City:* ${data.city || 'N/A'}\n` +
                          `🏛️ *Region:* ${data.region || 'N/A'}\n` +
@@ -32,7 +32,7 @@ module.exports = async function(sock, chatId, msg, q) {
 
             await sock.sendMessage(chatId, { text }, { quoted: msg });
         } catch (apiErr) {
-            const text = `🌐 *SHADOW IP INFO* 🌐\n\n` +
+            const text = `🌐 *𝐒𝐈𝐆𝐌𝐀 IP INFO* 🌐\n\n` +
                          `📍 *IP:* ${ip}\n` +
                          `⚠️ *Status:* API limit reached or IP not found\n` +
                          `🔄 Try again later or use a different IP.\n\n` +

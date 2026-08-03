@@ -11,7 +11,7 @@ async function saveCommand(sock, from, msg) {
             let buffer = Buffer.from([]);
             for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
             
-            const caption = `✅ *STATUS SAVED BY EVIL HACKER MD*`;
+            const caption = `✅ *STATUS SAVED BY 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`;
             
             if (type === 'imageMessage') {
                 await sock.sendMessage(from, { image: buffer, caption }, { quoted: msg });

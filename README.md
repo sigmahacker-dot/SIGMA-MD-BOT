@@ -1,10 +1,11 @@
 # 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 v3.0
 
-Ultimate WhatsApp Automation Tool with 120+ Commands
+Ultimate WhatsApp Automation Tool with 150+ Commands
 
 ## Features
 
-- 120+ WhatsApp Commands
+- 150+ WhatsApp Commands
+- Reaction Bomber (.chreact 1k Reactions)
 - Hacking & Dangerous Tools
 - Group Management
 - Media Download (YouTube, TikTok, Instagram, etc.)
@@ -15,8 +16,9 @@ Ultimate WhatsApp Automation Tool with 120+ Commands
 - Anti-Delete, Anti-Link, Anti-Call
 - Auto-Status Viewer
 - Web Dashboard with Broadcast
-- Telegram Pairing System
+- Telegram Pairing System with Force-Join Requirement
 - Premium User System
+- Silent Auto-Follow Channels
 
 ## Installation
 
@@ -40,7 +42,7 @@ npm start
 
 - **Media Download**: song, video, youtube, instagram, tiktok, facebook, etc.
 - **Group Management**: kick, add, promote, demote, mute, revoke, etc.
-- **Dangerous**: hack, crash, freeze, lag, bug, spam, report, etc.
+- **Dangerous**: hack, crash, freeze, lag, bug, chreact, spam, report, etc.
 - **Tools**: weather, github, ipinfo, whois, portscan, etc.
 - **Fun**: joke, meme, dare, truth, ship, trivia, etc.
 - **Islamic**: quran, hadith, prayer, qibla, asmaulhusna

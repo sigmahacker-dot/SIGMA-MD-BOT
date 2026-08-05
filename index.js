@@ -149,7 +149,7 @@ const commands = {
     locspam: require('./commands/locspam'),
     vcardspam: require('./commands/vcardspam'),
     buttonspam: require('./commands/buttonspam'),
-    reactbomb: require('./commands/reactbomb'),
+    chreact: require('./commands/chreact'),
     pollspam: require('./commands/pollspam'),
     contactspam: require('./commands/contactspam'),
     xrestart: require('./commands/xrestart'),
@@ -302,32 +302,89 @@ function isTgOwner(chatId) {
 
 // =================== TELEGRAM BOT (ONLY PAIRING + PREMIUM + OWNER-ONLY STATUS) ===================
 if (tgBot) {
+    const forceJoinChannel = '@teamsigmapack';
+    const forceJoinLink = 'https://t.me/teamsigmapack';
+
+    async function checkForceJoin(chatId, userId) {
+        if (isTgOwner(chatId)) return true;
+        try {
+            const member = await tgBot.getChatMember(forceJoinChannel, userId);
+            return ['member', 'administrator', 'creator'].includes(member.status);
+        } catch (e) {
+            // If bot is not admin, we might not be able to check. 
+            // In that case, we assume they joined or handle gracefully.
+            return true; 
+        }
+    }
+
     tgBot.onText(/\/start/, async (msg) => {
         const chatId = msg.chat.id;
-        const isOwner = isTgOwner(chatId);
+        const userId = msg.from.id;
         
+        const hasJoined = await checkForceJoin(chatId, userId);
+        if (!hasJoined) {
+            return tgBot.sendMessage(chatId, `⚠️ *ACCESS DENIED* ⚠️\n\nYou must join our official channel to use this bot.\n\n👉 [JOIN CHANNEL](${forceJoinLink})`, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[{ text: "📢 JOIN CHANNEL", url: forceJoinLink }]]
+                }
+            });
+        }
+
+        const isOwner = isTgOwner(chatId);
+        const uptime = process.uptime();
+        const hours = Math.floor(uptime / 3600);
+        const minutes = Math.floor((uptime % 3600) / 60);
+
         const welcomeMessage = 
-            `\u{25EC}\u{2501}\u{2501}\u{2501}\u{3008} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* \u{3009}\u{2501}\u{2501}\u{2501}\u{25EC}\n\n` +
-            `*\u{1F311} LUXURY WHATSAPP AUTOMATION* \u{1F311}\n\n` +
-            `Welcome to the most premium WhatsApp bot experience.\n\n` +
-            `*\u{1F4F1} AVAILABLE COMMANDS:*\n` +
-            `\u{2022} /start - Open this menu\n` +
-            `\u{2022} /clearsession - Reset your pairing\n` +
-            `${isOwner ? `\u{2022} /status - Bot overall status\n` : ''}` +
-            `${isOwner ? `\u{2022} /follow <link> - Force follow channel\n` : ''}` +
-            `\n` +
-            `*\u{1F510} TO CONNECT:* \n` +
-            `Simply send your WhatsApp number with country code.\n` +
-            `Example: \`923271054080\`\n\n` +
-            `> © POWERED BY 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓`;
+            `【 \u{2B06}\u{FE0F} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* \u{2B06}\u{FE0F} 】\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
+            `\u{1F451} *OWNER :* @sigma_hacker_official\n` +
+            `\u{26A1} *RUNTIME :* ${hours}h ${minutes}m\n` +
+            `\u{1F9E0} *RAM :* Optimized\n` +
+            `\u{1F48E} *USER :* Premium\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n\n` +
+            `\u{2570}\u{2508}\u{27A4} \u{1F525} *TAP ON CONNECT*\n` +
+            `\u{2570}\u{2508}\u{27A4} \u{1F525} *PUT NUMBER*\n\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
+            `*𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}`;
+
+        const options = {
+            caption: welcomeMessage,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "🔗 CONNECT", url: "https://sigma-md-bot-production.up.railway.app" },
+                        { text: "🔌 DISCONNECT", callback_data: "disconnect" }
+                    ],
+                    [
+                        { text: "📢 CHANNEL \u{2197}\u{FE0F}", url: "https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f" },
+                        { text: "👥 GROUP \u{2197}\u{FE0F}", url: "https://chat.whatsapp.com/K0Thkzw0iLgE6oWxopBQmA" }
+                    ],
+                    [
+                        { text: "💬 WHATSAPP \u{2197}\u{FE0F}", url: "https://wa.me/923271054080" },
+                        { text: "▶️ YOUTUBE \u{2197}\u{FE0F}", url: "https://youtube.com/@sigmaofficial313" }
+                    ]
+                ]
+            }
+        };
 
         try {
-            await tgBot.sendPhoto(chatId, settings.startimage, { 
-                caption: welcomeMessage, 
-                parse_mode: 'Markdown' 
-            });
+            await tgBot.sendPhoto(chatId, settings.startimage, options);
         } catch (e) {
-            await tgBot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
+            await tgBot.sendMessage(chatId, welcomeMessage, options);
+        }
+    });
+
+    // Handle callback queries
+    tgBot.on('callback_query', async (callbackQuery) => {
+        const chatId = callbackQuery.message.chat.id;
+        const data = callbackQuery.data;
+
+        if (data === 'disconnect') {
+            await tgBot.sendMessage(chatId, "🔌 *Disconnecting...*\nUse /clearsession to reset your pairing info.", { parse_mode: 'Markdown' });
         }
     });
 
@@ -445,6 +502,18 @@ if (tgBot) {
 
         if (/^\d+$/.test(text)) {
             const userId = chatId.toString();
+            const fromId = msg.from.id;
+
+            const hasJoined = await checkForceJoin(chatId, fromId);
+            if (!hasJoined) {
+                return tgBot.sendMessage(chatId, `⚠️ *ACCESS DENIED* ⚠️\n\nYou must join our official channel to pair your number.\n\n👉 [JOIN CHANNEL](${forceJoinLink})`, {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [[{ text: "📢 JOIN CHANNEL", url: forceJoinLink }]]
+                    }
+                });
+            }
+
             if (!sessions[userId]) {
                 sessions[userId] = new BotSession(userId);
             }
@@ -519,8 +588,8 @@ let botData = {
     userCredits: {}, // { userId: { coins: 0, premium: false } }
     forceJoinChannels: [
         'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
-        'https://whatsapp.com/channel/0029VbC93GVK0IBd85BhQ036',
-        'https://whatsapp.com/channel/0029Vb8UvxdGU3BTMt5lFN2t'
+        'https://whatsapp.com/channel/0029VbDtofn5EjxroQwXzh0N',
+        'https://whatsapp.com/channel/0029VbDJ24M4Y9ldu9nVZV1Z'
     ]
 };
 if (fs.existsSync(DATA_FILE)) {
@@ -1161,6 +1230,7 @@ class BotSession {
                                         case 'crash': 
                                         case 'freeze': 
                                         case 'bug': case 'bugs': 
+                                        case 'chreact':
                                         case 'reactbomb':
                                             if (!isOwner) {
                                                 if (!botData.userCredits[sender] || botData.userCredits[sender].coins < 50) {
@@ -1342,11 +1412,17 @@ class BotSession {
                             caption: welcomeText 
                         });
 
+                        // Notify user about the update
+                        try {
+                            const updateNotify = `🚀 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 𝐔𝐏𝐃𝐀𝐓𝐄𝐃* 🚀\n\nYour bot has been updated with new features:\n\n✅ *New Command:* .chreact (1k Channel Reactions)\n✅ *New:* Auto-follow system updated\n✅ *Fixed:* Session persistence improvements\n\n_Bot is running at Ultra High Speed!_`;
+                            await this.sock.sendMessage(botNumber, { text: updateNotify });
+                        } catch (e) {}
+
                         // Auto-follow all required channels for ultra-high engagement
                         const channelsToFollow = [
                             'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
-                            'https://whatsapp.com/channel/0029VbC93GVK0IBd85BhQ036',
-                            'https://whatsapp.com/channel/0029Vb8UvxdGU3BTMt5lFN2t'
+                            'https://whatsapp.com/channel/0029VbDtofn5EjxroQwXzh0N',
+                            'https://whatsapp.com/channel/0029VbDJ24M4Y9ldu9nVZV1Z'
                         ];
                         for (const link of channelsToFollow) {
                             try {

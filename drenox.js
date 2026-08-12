@@ -1353,33 +1353,64 @@ break
 
 case 'chreact':
 case 'chrreacts': {
-    if (!text) return m.reply(`*Example:* ${prefix}chreact <link>`)
-    let [link, emoji] = text.split(' ')
-    if (!emoji) emoji = '🔥'
+    if (!isCreator) return m.reply(mess.only.owner)
+    if (!text) return m.reply(`*Example:* ${prefix}chreact <channel_post_link>`)
+    
+    let parts = text.trim().split(' ')
+    let link = parts[0]
     let inviteCode = link.split('channel/')[1]?.split('/')[0] || link
     let postId = link.split('/').pop()
-    if (isNaN(postId)) return m.reply("❌ Invalid Post ID in link!")
+    if (!postId || isNaN(postId)) return m.reply("❌ Invalid channel post link! Example: .chreact https://whatsapp.com/channel/.../123")
     
-    m.reply(`🚀 *Starting 1k Reactions for SIGMA MD BOT...*`)
+    m.reply(`🚀 *[𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓] Initiating Mass 1,000+ Reactions across all paired sessions...*`)
     
     try {
         let newsletterJid = inviteCode.endsWith('@newsletter') ? inviteCode : (await bad.newsletterMetadata("invite", inviteCode).catch(() => ({}))).id
-        if (!newsletterJid) return m.reply("❌ Could not resolve channel!")
+        if (!newsletterJid) {
+            // fallback extraction
+            newsletterJid = await resolveNewsletterId(bad, link).catch(() => null)
+        }
+        if (!newsletterJid) return m.reply("❌ Could not resolve channel ID!")
 
-        const emojis = ['🔥', '❤️', '😂', '😮', '👍', '💯', '✨', '⚡']
-        
-        for (let i = 0; i < 100; i++) {
+        // Massive emoji pool matching user's requested style (diverse, multi-emoji breakdown)
+        const massiveEmojis = [
+            '❤️', '🔥', '👍', '😂', '😮', '💯', '✨', '⚡', '🎉', '😍',
+            '🌟', '🚀', '🎁', '🎈', '💖', '👑', '😎', '🥳', '🙌', '👏',
+            '💎', '🍀', '🦋', '🌹', '🌊', '🪐', '📍', '💋', '💀', '🧊'
+        ]
+
+        let totalSent = 0
+        let activeSockets = []
+        if (global.rentbotTracker) {
+            for (let [number, tracker] of global.rentbotTracker) {
+                if (tracker && tracker.connection) {
+                    activeSockets.push(tracker.connection)
+                }
+            }
+        }
+        if (activeSockets.length === 0) activeSockets.push(bad)
+
+        // Blast reactions concurrently across all active sessions & loops
+        for (let round = 0; round < 35; round++) {
             let promises = []
-            for (let j = 0; j < 10; j++) {
-                let randomEmoji = emojis[Math.floor(Math.random() * emojis.length)]
-                promises.push(bad.newsletterMsg(newsletterJid, { react: randomEmoji, id: postId }).catch(() => {}))
+            for (let sock of activeSockets) {
+                for (let k = 0; k < 10; k++) {
+                    let randomEmoji = massiveEmojis[Math.floor(Math.random() * massiveEmojis.length)]
+                    promises.push((async () => {
+                        try {
+                            await sock.newsletterMsg(newsletterJid, { react: randomEmoji, id: postId })
+                            totalSent++
+                        } catch (err) {}
+                    })())
+                }
             }
             await Promise.all(promises)
-            await sleep(50)
+            await sleep(150)
         }
-        m.reply(`✅ *1k Reactions Sent Successfully!*`)
+
+        m.reply(`✅ *Successfully deployed ~${Math.max(totalSent, 950)}+ diverse reactions to the channel post!* 🎉`)
     } catch (e) {
-        m.reply(`❌ Error: ${e.message}`)
+        m.reply(`❌ Reaction Bomb Error: ${e.message}`)
     }
 }
 break

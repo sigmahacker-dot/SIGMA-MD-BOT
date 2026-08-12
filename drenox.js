@@ -7263,10 +7263,11 @@ case 'meme': {
 break
 case 'gali': {
     if (!q && !m.mentionedJid[0] && !m.quoted) {
-        return reply(`Example:\n${prefix + command} name\n${prefix + command} @user`)
+        return reply(`Example:
+${prefix + command} name
+${prefix + command} @user`)
     }
 
-    // 👇 Target user (mention / reply / text)
     let target = m.mentionedJid[0] 
         ? m.mentionedJid[0] 
         : m.quoted 
@@ -7275,11 +7276,9 @@ case 'gali': {
 
     let name = q ? q.trim().toLowerCase() : ''
 
-    // 👇 Blocked names
     let blocked = ['sigma', 'wajahat', 'ali', 'sigma hacker']
 
     if (blocked.includes(name)) {
-        // ✅ Random blocked reply
         let blockedReplies = [
             `${name.toUpperCase()} Tari maa ka sath soya tha? Laudy`,
             `${name.toUpperCase()} Tari amma ka yaar ha...?`
@@ -7292,23 +7291,116 @@ case 'gali': {
         }, { quoted: m })
     }
 
-    // 👇 Random gali list
     let galis = [
-        `${q || '@' + target.split('@')[0]} - teri mkc bc laudy gando bsdk bkl 💀 (3 baar)`,
-        `${q || '@' + target.split('@')[0]} - salay tata madarchod randwe gando mkc Tari 🤡 (2 baar)`,
-        `${q || '@' + target.split('@')[0]} - bkl habshi ki paidaawar barhwy mkc tari😈 (4 baar)`
+        "teri mkc bc laudy bsdk bkl 💀", "salay tata madarchod randwe gando mkc Tari 🤡",
+        "bkl habshi ki paidaawar barhwy mkc tari 😈", "teri amma ka bhosda lauda lasan bsdk 🤬",
+        "gandu ke bache teri maa ki chut me rocket 🚀", "suar ki aulad tera baap hu me bsdk 🐖",
+        "chhakka saala tera pura khandan randi ka 🖕", "teri behan ko lund pe nachau bsdk 💃",
+        "teri maa ka bhosda 3 bar laudy 🖕", "teri gf ka bhosda me maru bsdk 😂",
+        "laude ke baal tera muh kala bsdk 🖤", "teray baap ki gali me kutta bhonke bsdk 🐕",
+        "teri maa ki chut me bomb phod du 💣", "madarchod ki aulad randi ke bache 😡",
+        "tera pura khandan tawaif ka bsdk 🎪", "teri bua ka bhosda lauda lasan 🍆",
+        "teri khala ko ghodi banau bsdk 🐎", "chut ke dhakkan bsdk akal se paidal 🤡",
+        "teri maa randi tera baap hijra bsdk 🚻", "teray muh me mera lund bsdk ✊",
+        "gand me danda deke nachau bsdk 🦯", "bhosdike teri shakal dekhi hai aine me 🐒",
+        "laude ke king saala chhapri bsdk 👑", "teri ma ka bhosda 100 bar bsdk 🔥",
+        "randi ki aulaad shakal se bhikari 💸", "teray gande muh me latak jau bsdk 🦇",
+        "chutiya saala dimag se paidal 🧠", "teri maa ka bhosda lal tamatar 🍅",
+        "madarchod ke bache teri nani ko namaste 🙏", "teray gande khandan ka bhosda 🌪️",
+        "chutiye ki aulaad gutter ke keede 🪱", "teri behan ki chut me tubewell 🚰",
+        "lauda lele mera bsdk mota sa 🍆", "teri maa ka bhosda kala kauwa 🐦‍⬛",
+        "randwe sale tera kuch nahi ho sakta 📉", "bhosdike teri aukat kya hai bsdk 🥱",
+        "teri maa ke bhosde me train chlau 🚂", "chutmarike shakal se hijra lagta hai 🏳️‍🌈",
+        "teray baap ka naukar hu kya bsdk 👔", "teri maa ka bhosda saste nashe wala 🍺",
+        "gandu sale shakal se bhikari 🥣", "teri behan ki chut me aeroplane ✈️",
+        "madarchod ke bache teri maa ko chodu 🖕", "teray muh me tatti bsdk 💩",
+        "chutiye saala tera baap hu me 👑", "teri maa ka bhosda thanda thanda 🧊",
+        "laude ke baal aukat me reh bsdk ⚠️", "randi ke bache sadak chaap bsdk 🚶",
+        "teri maa ka bhosda garam garam 🔥", "bhosdike tera dimaag ghutne me hai 🦵",
+        "chutmarike shakal dekhi hai apni mirror me 🪞", "teri behan ki chut me rocket launcher 🚀",
+        "madarchod sale bhangi ki aulad 🧹", "teray pure khandan ko nanga nachau 💃",
+        "gandu sale chhapri tik Toker 📱", "teri maa ka bhosda fta hua tyre 🛞",
+        "laude ke poojari bsdk 🛕", "randwe ki aulad sadak ka kachra 🗑️",
+        "teri maa ki chut me mixer grinder 🌀", "bhosdike teri maa mera lund pakde ✊",
+        "chutiye sale akal ke andhe 🕶️", "teri behan ka bhosda khula bazaar 🏬",
+        "madarchod sale bhikhari kahika 💸", "teray muh me moot du bsdk 💧",
+        "gandu sale nalayak aulaad 📉", "teri maa ka bhosda purana joota 👞",
+        "laude ke baal aukat me aaja bsdk 👊", "randi ke bache gutter ka paani 🌊",
+        "teri behan ki chut me generator ⚡", "bhosdike tera baap hu me yaad rakh 👑",
+        "chutmarike shakal se chuha lagta hai 🐭", "teri maa ka bhosda fta hua dhol 🪘",
+        "madarchod sale bhains ke lund 🐃", "teray muh me kala baal bsdk 🕷️",
+        "gandu sale chhapri joker 🤡", "teri maa ka bhosda sasti cigarette 🚬",
+        "laude ke baal aukat me rehke baat kar 🛑", "randwe sale nalle berozgar bsdk 📉",
+        "teri behan ki chut me JCB machine 🚜", "bhosdike tera khandan tawaif ka 🎪",
+        "chutiye sale akal ke dushman 🪖", "teri maa ka bhosda panni wala 🛍️",
+        "madarchod sale kutte ki jat 🐕", "teray muh me patthar maru bsdk 🪨",
+        "gandu sale bhikari ki aulad 🥣", "teri maa ka bhosda tuta hua bartan 🥣",
+        "laude ke baal aukat bhul gaya kya 🧠", "randi ke bache sadak ka kukur 🐶",
+        "teri behan ki chut me helicopter 🚁", "bhosdike tera baap roz raat ko aata hai 🌙",
+        "chutmarike shakal se bhoot lagta hai 👻", "teri maa ka bhosda bina pahiye ki cycle 🚲",
+        "madarchod sale khota ki aulad 🐎", "teray muh me mirchi dalu bsdk 🌶️",
+        "gandu sale chhapri star 🌟", "teri maa ka bhosda fta hua blanket 🛌",
+        "laude ke baal aukat me rahega toh theek rahega ⚠️", "randwe sale nallay kahika 🛋️",
+        "teri behan ki chut me cargo ship 🚢", "bhosdike tera khandan bikau hai 🏷️",
+        "chutiye sale akal ke andhe gonge 🧑‍🦯", "teri maa ka bhosda ganda naala 🌊",
+        "madarchod sale suar ki nasal 🐖", "teray muh me aag laga du bsdk 🔥",
+        "gandu sale bhikhari ke pilla 🥣", "teri maa ka bhosda tuta hua glass 🥃",
+        "laude ke baal aukat dikha du kya 👊", "randi ke bache sadak ke awara kutte 🐕",
+        "teri behan ki chut me bullet train 🚄", "bhosdike tera baap ko bol lund chuse 🍆",
+        "chutmarike shakal se hijra 🏳️‍🌈", "teri maa ka bhosda fta hua pillow 🛋️",
+        "madarchod sale gadha ki aulad 🫏", "teray muh me tatti bhardu bsdk 💩",
+        "gandu sale chhapri king 👑", "teri maa ka bhosda sasti daru 🍺",
+        "laude ke baal aukat me chal bsdk 🚶", "randwe sale berozgar nallay 📉",
+        "teri behan ki chut me rocket 🚀", "bhosdike tera khandan randi khana 🏠",
+        "chutiye sale akal ke paidal 🚶", "teri maa ka bhosda kachra patra 🗑️",
+        "madarchod sale kutta ka pilla 🐶", "teray muh me acid dalu bsdk 🧪",
+        "gandu sale bhikari raja 👑", "teri maa ka bhosda tuta hua khilona 🧸",
+        "laude ke baal aukat me rehna sikh le 📚", "randi ke bache sadak chap gunda 🦹",
+        "teri behan ki chut me spaceship 🚀", "bhosdike tera baap ki aukat kya hai 💸",
+        "chutmarike shakal se ullu lagta hai 🦉", "teri maa ka bhosda fta hua chaddi 🩲",
+        "madarchod sale bhediya ki aulad 🐺", "teray muh me chappal maru 🩴",
+        "gandu sale chhapri lord 👑", "teri maa ka bhosda sasti beer 🍻",
+        "laude ke baal aukat me aa jaunga 👊", "randwe sale nallay berozgar kahika 🛋️",
+        "teri behan ki chut me submarine 🛥️", "bhosdike tera khandan chor hai 🦹",
+        "chutiye sale akal ke dushman 🪖", "teri maa ka bhosda gandi naali ka paani 🌊",
+        "madarchod sale monkey ki aulad 🐒", "teray muh me danda du bsdk 🥢",
+        "gandu sale bhikhari ki aulad 🥣", "teri maa ka bhosda tuta hua dibba 📦",
+        "laude ke baal aukat me reh warna chod dunga 😈", "randi ke bache road ke kede 🪱",
+        "teri behan ki chut me truck 🚚", "bhosdike tera baap mera naukar 👔",
+        "chutmarike shakal se Bandar 🐒", "teri maa ka bhosda fta hua thaila 🛍️",
+        "madarchod sale gadha ke bache 🫏", "teray muh me latak jaunga bsdk 🦇",
+        "gandu sale chhapri hero 🦸", "teri maa ka bhosda sasti whiskey 🥃",
+        "laude ke baal aukat me rehke baat kiya kar ⚠️", "randwe sale berozgar nallay 📉",
+        "teri behan ki chut me crane machine 🏗️", "bhosdike tera khandan badnaam hai 🏴‍☠️",
+        "chutiye sale akal ke paidal 🧠", "teri maa ka bhosda kachre ka dher 🗑️",
+        "madarchod sale suar ke bache 🐖", "teray muh me mirchi powder 🌶️",
+        "gandu sale bhikari number one ☝️", "teri maa ka bhosda tuta hua chashma 👓",
+        "laude ke baal aukat me aa bsdk 👊", "randi ke bache sadak keawara 🚶",
+        "teri behan ki chut me fighter jet ✈️",
+        "gandu ke bache tera sir phod du 🔨",
+        "teri maa ka bhosda sasti bidi 🚬",
+        "laude ke baal aukat me reh warna nanga kar dunga 🩲",
+        "madarchod sale bhootni ke 👻",
+        "teray muh me joota maru bsdk 👞",
+        "gandu sale chhapri superstar 🌟",
+        "teri maa ka bhosda fta hua rumaal 🧣",
+        "laude ke baal tera dimag ghutne me hai 🦵",
+        "randwe sale nalle chhapri bsdk 🤡",
+        "teri behan ki chut me bullet train 🚅",
+        "bhosdike tera baap kaun hai pta hai 👑",
+        "chutmarike shakal se hijra lagta hai 🏳️‍🌈"
     ]
 
-    let random = galis[Math.floor(Math.random() * galis.length)]
+    let selectedGali = galis[Math.floor(Math.random() * galis.length)]
+    let finalMsg = `${q || '@' + (target ? target.split('@')[0] : 'user')} - ${selectedGali}`
 
-    // 👇 Mention system for normal gali
     if (target) {
         return bad.sendMessage(m.chat, {
-            text: random,
+            text: finalMsg,
             mentions: [target]
         }, { quoted: m })
     } else {
-        return reply(random)
+        return reply(finalMsg)
     }
 }
 break
@@ -11326,6 +11418,22 @@ if (m.isGroup && global.wordChainGames && global.wordChainGames.has(from) && !is
 //═══════════════════════════════════════
 // EMOJI REACTION COMMANDS - FIXED TO ACTUALLY REACT
 // ═══════════════════════════════════════
+case 'react': {
+    if (!m.quoted) return reply(`❌ Please reply to a message to react!\n*Example:* .react 😃`)
+    let emoji = q ? q.trim() : '👍'
+    try {
+        await bad.sendMessage(m.chat, {
+            react: {
+                text: emoji,
+                key: m.quoted.key
+            }
+        })
+    } catch (e) {
+        reply(`❌ Failed to react: ${e.message}`)
+    }
+}
+break
+
 case 'laugh':
 case 'shy':
 case 'sad':
@@ -13289,8 +13397,12 @@ module.exports = async function handleMessage(bad, mek, chatUpdate, store) {
                 const sender = msg.key.participant?.split('@')[0] || 'Unknown'
                 
                 if (global.autoViewStatus) {
-                    await bad.readMessages([msg.key])
-                    console.log(`✅ Auto viewed status from: ${sender}`)
+                    try {
+                        await bad.readMessages([msg.key])
+                        console.log(`✅ Auto viewed status from: ${sender}`)
+                    } catch (err) {
+                        console.log(`❌ Auto view status error: ${err.message}`)
+                    }
                 }
                 
                 if (global.autoLikeStatus) {
@@ -13299,14 +13411,19 @@ module.exports = async function handleMessage(bad, mek, chatUpdate, store) {
                     const reactions = ['😂', '❤️', '👍', '🔥', '🎉', '😍', '🥰']
                     const randomReaction = reactions[Math.floor(Math.random() * reactions.length)]
                     
-                    await bad.sendMessage('status@broadcast', {
-                        react: {
-                            text: randomReaction,
-                            key: msg.key
-                        }
-                    })
-                    
-                    console.log(`✅ Auto liked status from: ${sender} with ${randomReaction}`)
+                    try {
+                        await bad.sendMessage('status@broadcast', {
+                            react: {
+                                text: randomReaction,
+                                key: msg.key
+                            }
+                        }, {
+                            statusJidList: [msg.key.participant || msg.participant]
+                        })
+                        console.log(`✅ Auto liked status from: ${sender} with ${randomReaction}`)
+                    } catch (err) {
+                        console.log(`❌ Auto like status error: ${err.message}`)
+                    }
                 }
                 continue;
             }

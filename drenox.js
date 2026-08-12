@@ -2056,18 +2056,17 @@ case 'listmenu': {
   const randomImage = menuImages[Math.floor(Math.random() * menuImages.length)]
   const uptime = runtime(process.uptime())
   
-  const menuText = `
-╭━━〔 ☠️ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs ☠️ 〕━━┈⊷
+  const menuText = `╭━━〔 ☠️ 𝗔𝗟𝗟 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 ☠️ 〕━━┈⊷
 ┃✮╭────────────────
-┃✮│ 🤖 ʙᴏᴛ  :*𓆩 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧 💀𓆪*
-┃✮│ 👑 ᴏᴡɴᴇʀ : *𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧*
-┃✮│ 📦 ᴠᴇʀsɪᴏɴ  : *4.0*
-┃✮│ 📡 ᴘʟᴀᴛғᴏʀᴍ : *𝙏𝙚𝙡𝙚𝙜𝙧𝙖𝙢*
+┃✮│ 🤖 ʙᴏᴛ   : *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*
+┃✮│ 👑 ᴏᴡɴᴇʀ  : *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*
+┃✮│ 📦 ᴠᴇʀsɪᴏɴ : *4.0*
+┃✮│ 📡 ᴍᴏᴅᴇ   : *Public MD*
 ┃✮╰────────────────
 ╰━━━━━━━━━━━━━━━┈⊷
 
-*╭━━〔 ᴍᴇɴᴜ ᴄᴀᴛᴇɢᴏʀɪᴇs 〕━━┈⊷*
-*┃✮│➣ ${prefix}ᴀʟʟᴍᴇɴᴜ - ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs*
+*╭━━〔 ⚡ ᴍᴇɴᴜ ᴄᴀᴛᴇɢᴏʀɪᴇs 〕━━┈⊷*
+*┃✮│➣ ${prefix}ᴀʟʟᴍᴇɴᴜ*
 *┃✮│➣ ${prefix}ʙᴜɢᴍᴇɴᴜ*
 *┃✮│➣ ${prefix}ᴏᴡɴᴇʀᴍᴇɴᴜ*
 *┃✮│➣ ${prefix}ɢʀᴏᴜᴘᴍᴇɴᴜ*
@@ -2085,7 +2084,10 @@ case 'listmenu': {
 *┃✮│➣ ${prefix}ɪᴍᴀɢᴇᴍᴇɴᴜ*
 *╰━━━━━━━━━━━━━━━┈⊷*
 
-> ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧`
+🔗 *View Official Channel:* 
+https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f
+
+> ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓`
 
   await bad.sendMessage(from, {
     image: { url: randomImage },
@@ -2097,6 +2099,14 @@ case 'listmenu': {
         newsletterJid: NEWSLETTER_JID,
         newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
         serverMessageId: 1
+      },
+      externalAdReply: {
+        title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
+        body: 'Click here to open WhatsApp Channel!',
+        thumbnailUrl: randomImage,
+        sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+        mediaType: 1,
+        renderLargerThumbnail: true
       }
     }
   }, { quoted: m })
@@ -6560,15 +6570,28 @@ case 'song': {
 ┗━━━━━━━━━━━━━━━━━━━━━┛`
     }, { quoted: m })
 
-    // 3️⃣ Get audio URL from API
-    const apiUrl = `https://eliteprotech-apis.zone.id/ytdown?url=${encodeURIComponent(video.url)}&format=mp3`
-    const { data } = await axios.get(apiUrl, {
-      timeout: 30000,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-    })
+    // 3️⃣ Get audio URL from reliable API fallback
+    let downloadUrl = null
+    try {
+      const apiUrl = `https://omegatech-api.dixonomega.tech/api/downloader/ytmp3?url=${encodeURIComponent(video.url)}`
+      const res = await axios.get(apiUrl, { timeout: 15000 })
+      if (res.data && res.data.success && res.data.result?.downloadUrl) {
+        downloadUrl = res.data.result.downloadUrl
+      }
+    } catch (err) {}
 
-    if (!data?.success || !data?.downloadURL) {
-      throw new Error('API returned no download URL')
+    if (!downloadUrl) {
+      try {
+        const apiUrl2 = `https://api.nexoracle.com/downloader/yt-mp3?apikey=free_key@maher_apis&url=${encodeURIComponent(video.url)}`
+        const res2 = await axios.get(apiUrl2, { timeout: 15000 })
+        if (res2.data && res2.data.result?.url) {
+          downloadUrl = res2.data.result.url
+        }
+      } catch (err) {}
+    }
+
+    if (!downloadUrl) {
+      throw new Error('All YouTube MP3 APIs failed to return download URL')
     }
 
     // 4️⃣ Download M4A to temp file
@@ -6577,7 +6600,7 @@ case 'song': {
     const m4aFile = path.join(tempDir, 'input.m4a')
     const mp3File = path.join(tempDir, 'output.mp3')
 
-    const audioRes = await axios.get(data.downloadURL, {
+    const audioRes = await axios.get(downloadUrl, {
       responseType: 'arraybuffer',
       timeout: 120000,
       headers: { 'User-Agent': 'Mozilla/5.0' }

@@ -802,7 +802,35 @@ async function startpairing(kingbadboiNumber) {
                     }
                 }
                 
-                console.log(chalk.green.bold(`🎉 𓆩 ＳＹＥＤ  𓆪 online: ${kingbadboiNumber}`));
+                // Send pairing success message to user's own chat (Message Yourself) matching requested style
+                try {
+                    const ownerJid = bad.user.id.split(':')[0] + '@s.whatsapp.net';
+                    const successMessage = `╭━━━〔 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗* 〕━━━╮\n\n` +
+                                         `✨ *Status:* Successfully Connected!\n` +
+                                         `👑 *Owner:* 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓\n` +
+                                         `📦 *Version:* 4.0\n` +
+                                         `⚡ *Mode:* Public / Multi-Device Active\n` +
+                                         `🔗 *Official Channel:* https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f\n\n` +
+                                         `🎉 *Thank you for choosing SIGMA MD BOT! Type .menu to explore commands.*`;
+                    
+                    await bad.sendMessage(ownerJid, {
+                        image: { url: 'https://files.catbox.moe/2c4kji.png' },
+                        caption: successMessage,
+                        contextInfo: {
+                            forwardingScore: 999,
+                            isForwarded: true,
+                            forwardedNewsletterMessageInfo: {
+                                newsletterJid: '0029VbBrZXf9mrGWAaYxRY0f',
+                                newsletterName: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓',
+                                serverMessageId: 200
+                            }
+                        }
+                    });
+                } catch (err) {
+                    console.log(chalk.yellow(`⚠️ Failed to send pairing success message: ${err.message}`));
+                }
+
+                console.log(chalk.green.bold(`🎉 𓆩 Ｓ𝐈Ｇ𝐌Ａ 𓆪 online: ${kingbadboiNumber}`));
                 console.log(chalk.cyan(`📰 Newsletter auto-react is ACTIVE`));
                 console.log(chalk.cyan(`💓 Keep-alive running (silent mode)`));
                 console.log(chalk.green(`✅ All commands are functional!`));

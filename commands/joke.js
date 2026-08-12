@@ -6,9 +6,10 @@ module.exports = async function (sock, chatId) {
             headers: { Accept: 'application/json' }
         });
         const joke = response.data.joke;
-        await sock.sendMessage(chatId, { text: joke });
+        const text = `😂 *𝐒𝐈𝐆𝐌𝐀 𝐉𝐎𝐊𝐄* 😂\n\n${joke}\n\n> © 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓`;
+        await sock.sendMessage(chatId, { text });
     } catch (error) {
         console.error('Error fetching joke:', error);
-        await sock.sendMessage(chatId, { text: 'Sorry, I could not fetch a joke right now.' });
+        await sock.sendMessage(chatId, { text: '❌ Error: Sorry, I could not fetch a joke right now.' });
     }
 };

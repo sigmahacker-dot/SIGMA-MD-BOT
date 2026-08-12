@@ -197,6 +197,9 @@ const commands = {
     forward: require('./commands/forward'),
     clear: require('./commands/clear'),
     save: require('./commands/save'),
+    poetry: require('./commands/poetry'),
+    shayari: require('./commands/shayari'),
+    fact: require('./commands/fact'),
     get: (sock, from, msg) => sock.sendMessage(from, { text: "❌ The 'get' command is not implemented yet." }, { quoted: msg }),
     backup: require('./commands/backup'),
     restore: require('./commands/restore'),
@@ -311,70 +314,102 @@ if (tgBot) {
             const member = await tgBot.getChatMember(forceJoinChannel, userId);
             return ['member', 'administrator', 'creator'].includes(member.status);
         } catch (e) {
-            // If bot is not admin, we might not be able to check. 
-            // In that case, we assume they joined or handle gracefully.
             return true; 
         }
     }
 
-    tgBot.onText(/\/start/, async (msg) => {
+    tgBot.on('message', async (msg) => {
+        if (!msg.text) return;
         const chatId = msg.chat.id;
         const userId = msg.from.id;
-        
-        const hasJoined = await checkForceJoin(chatId, userId);
-        if (!hasJoined) {
-            return tgBot.sendMessage(chatId, `⚠️ *ACCESS DENIED* ⚠️\n\nYou must join our official channel to use this bot.\n\n👉 [JOIN CHANNEL](${forceJoinLink})`, {
+        const text = msg.text;
+
+        if (text === '/start' || text === '✅ I HAVE JOINED') {
+            const hasJoined = await checkForceJoin(chatId, userId);
+            if (!hasJoined) {
+                return tgBot.sendMessage(chatId, `⚠️ *ACCESS DENIED* ⚠️\n\nYou must join our official channel to use this bot.\n\n👉 [JOIN CHANNEL](${forceJoinLink})\n\nAfter joining, click the button below:`, {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        keyboard: [[{ text: "✅ I HAVE JOINED" }]],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
+                });
+            }
+
+            const uptime = process.uptime();
+            const hours = Math.floor(uptime / 3600);
+            const minutes = Math.floor((uptime % 3600) / 60);
+
+            const welcomeMessage = 
+                `【 \u{2B06}\u{FE0F} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* \u{2B06}\u{FE0F} 】\n` +
+                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
+                `\u{1F451} *OWNER :* @sigma_hacker_official\n` +
+                `\u{26A1} *RUNTIME :* ${hours}h ${minutes}m\n` +
+                `\u{1F9E0} *RAM :* Optimized\n` +
+                `\u{1F48E} *USER :* Premium\n` +
+                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n\n` +
+                `\u{2570}\u{2508}\u{27A4} \u{1F525} *TAP ON CONNECT*\n` +
+                `\u{2570}\u{2508}\u{27A4} \u{1F525} *PUT NUMBER*\n\n` +
+                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
+                `*𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*\n` +
+                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}`;
+
+            const options = {
+                caption: welcomeMessage,
                 parse_mode: 'Markdown',
                 reply_markup: {
-                    inline_keyboard: [[{ text: "📢 JOIN CHANNEL", url: forceJoinLink }]]
+                    inline_keyboard: [
+                        [
+                            { text: "🔗 CONNECT", url: "https://sigma-md-bot-production.up.railway.app" },
+                            { text: "🔌 DISCONNECT", callback_data: "disconnect" }
+                        ],
+                        [
+                            { text: "📢 CHANNEL \u{2197}\u{FE0F}", url: "https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f" },
+                            { text: "👥 GROUP \u{2197}\u{FE0F}", url: "https://chat.whatsapp.com/K0Thkzw0iLgE6oWxopBQmA" }
+                        ],
+                        [
+                            { text: "💬 WHATSAPP \u{2197}\u{FE0F}", url: "https://wa.me/923271054080" },
+                            { text: "▶️ YOUTUBE \u{2197}\u{FE0F}", url: "https://youtube.com/@sigmaofficial313" }
+                        ]
+                    ]
                 }
-            });
+            };
+
+            try {
+                await tgBot.sendPhoto(chatId, settings.startimage, options);
+            } catch (e) {
+                await tgBot.sendMessage(chatId, welcomeMessage, options);
+            }
+            return;
         }
 
-        const isOwner = isTgOwner(chatId);
-        const uptime = process.uptime();
-        const hours = Math.floor(uptime / 3600);
-        const minutes = Math.floor((uptime % 3600) / 60);
-
-        const welcomeMessage = 
-            `【 \u{2B06}\u{FE0F} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* \u{2B06}\u{FE0F} 】\n` +
-            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
-            `\u{1F451} *OWNER :* @sigma_hacker_official\n` +
-            `\u{26A1} *RUNTIME :* ${hours}h ${minutes}m\n` +
-            `\u{1F9E0} *RAM :* Optimized\n` +
-            `\u{1F48E} *USER :* Premium\n` +
-            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n\n` +
-            `\u{2570}\u{2508}\u{27A4} \u{1F525} *TAP ON CONNECT*\n` +
-            `\u{2570}\u{2508}\u{27A4} \u{1F525} *PUT NUMBER*\n\n` +
-            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
-            `*𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*\n` +
-            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}`;
-
-        const options = {
-            caption: welcomeMessage,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: "🔗 CONNECT", url: "https://sigma-md-bot-production.up.railway.app" },
-                        { text: "🔌 DISCONNECT", callback_data: "disconnect" }
-                    ],
-                    [
-                        { text: "📢 CHANNEL \u{2197}\u{FE0F}", url: "https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f" },
-                        { text: "👥 GROUP \u{2197}\u{FE0F}", url: "https://chat.whatsapp.com/K0Thkzw0iLgE6oWxopBQmA" }
-                    ],
-                    [
-                        { text: "💬 WHATSAPP \u{2197}\u{FE0F}", url: "https://wa.me/923271054080" },
-                        { text: "▶️ YOUTUBE \u{2197}\u{FE0F}", url: "https://youtube.com/@sigmaofficial313" }
-                    ]
-                ]
+        // Pairing handler - when user sends a number
+        if (/^\d+$/.test(text)) {
+            const hasJoined = await checkForceJoin(chatId, userId);
+            if (!hasJoined) {
+                return tgBot.sendMessage(chatId, `⚠️ *ACCESS DENIED* ⚠️\n\nYou must join our official channel to pair your number.\n\n👉 [JOIN CHANNEL](${forceJoinLink})`, {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [[{ text: "📢 JOIN CHANNEL", url: forceJoinLink }]]
+                    }
+                });
             }
-        };
 
-        try {
-            await tgBot.sendPhoto(chatId, settings.startimage, options);
-        } catch (e) {
-            await tgBot.sendMessage(chatId, welcomeMessage, options);
+            const sessionUserId = `tg_${chatId}`;
+            if (!sessions[sessionUserId]) {
+                sessions[sessionUserId] = new BotSession(sessionUserId);
+            }
+
+            const initMsg = 
+                `\u{25EC}\u{2501}\u{2501}\u{2501}\u{3008} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 PAIRING* \u{3009}\u{2501}\u{2501}\u{2501}\u{25EC}\n\n` +
+                `*\u{1F504} REQUESTING CODE...*\n` +
+                `Target Number: \`${text}\`\n\n` +
+                `_Please wait a few seconds..._`;
+
+            await tgBot.sendMessage(chatId, initMsg, { parse_mode: 'Markdown' });
+            sessions[sessionUserId].tgChatId = chatId;
+            await sessions[sessionUserId].initialize(text);
         }
     });
 
@@ -493,53 +528,7 @@ if (tgBot) {
         await tgBot.sendMessage(chatId, `\u{1F451} *Premium Users:*\n\n${list}`, { parse_mode: 'Markdown' });
     });
 
-    // Pairing handler - when user sends a number
-    tgBot.on('message', async (msg) => {
-        const chatId = msg.chat.id;
-        const text = msg.text;
 
-        if (!text || text.startsWith('/')) return;
-
-        if (/^\d+$/.test(text)) {
-            const userId = chatId.toString();
-            const fromId = msg.from.id;
-
-            const hasJoined = await checkForceJoin(chatId, fromId);
-            if (!hasJoined) {
-                return tgBot.sendMessage(chatId, `⚠️ *ACCESS DENIED* ⚠️\n\nYou must join our official channel to pair your number.\n\n👉 [JOIN CHANNEL](${forceJoinLink})`, {
-                    parse_mode: 'Markdown',
-                    reply_markup: {
-                        inline_keyboard: [[{ text: "📢 JOIN CHANNEL", url: forceJoinLink }]]
-                    }
-                });
-            }
-
-            if (!sessions[userId]) {
-                sessions[userId] = new BotSession(userId);
-            }
-
-            if (!botData.statusSettings[userId]) {
-                botData.statusSettings[userId] = { 
-                    autoStatus: false,
-                    autoSeen: false,
-                    autoLike: false,
-                    autoDownload: false,
-                    isPublic: false
-                };
-                saveBotData();
-            }
-
-            const initMsg = 
-                `\u{25EC}\u{2501}\u{2501}\u{2501}\u{3008} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 PAIRING* \u{3009}\u{2501}\u{2501}\u{2501}\u{25EC}\n\n` +
-                `*\u{1F504} REQUESTING CODE...*\n` +
-                `Target Number: \`${text}\`\n\n` +
-                `_Please wait a few seconds..._`;
-
-            await tgBot.sendMessage(chatId, initMsg, { parse_mode: 'Markdown' });
-            sessions[userId].tgChatId = chatId;
-            await sessions[userId].initialize(text);
-        }
-    });
 }
 
 
@@ -708,20 +697,15 @@ class BotSession {
     }
 
     startActiveCheck() {
+        // Silent active check to prevent irritating messages
         if (this.activeInterval) clearInterval(this.activeInterval);
         this.activeInterval = setInterval(async () => {
             if (this.isConnected && this.sock?.user) {
                 try {
-                    const botNumber = jidNormalizedUser(this.sock.user.id);
-                    await this.sock.sendMessage(botNumber, { 
-                        text: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 \u{1D5D4}\u{1D5E5}\u{1D5D8}-\u{1D5D3}\u{1D5E6}\u{1D601} \u{1D5F1}\u{1D600} \u{1D603}\u{1D608}\u{1D5F1}\u{1D5F1}\u{1D5F2}\u{1D5F7}\u{1D5F2} \u{1F680}\n\n_24/7 Active System Working..._" 
-                    });
-                    this.sendLog("24/7 Keep-alive message sent to own DM. \u{2705}", "success");
-                } catch (e) {
-                    this.sendLog("Keep-alive failed: " + e.message, "error");
-                }
+                    await this.sock.sendPresenceUpdate('available');
+                } catch (e) {}
             }
-        }, 60 * 60 * 1000);
+        }, 10 * 60 * 1000);
     }
 
     async initialize(pairingNumber = null) {
@@ -742,18 +726,18 @@ class BotSession {
                 },
                 printQRInTerminal: false,
                 logger: P({ level: 'fatal' }),
-                browser: Browsers.ubuntu('Chrome'),
+                browser: Browsers.macOS('Desktop'),
                 syncFullHistory: false,
                 shouldSyncHistoryMessage: () => false,
                 markOnlineOnConnect: true,
-                keepAliveIntervalMs: 10000, // Faster keep-alive
-                connectTimeoutMs: 30000,
-                defaultQueryTimeoutMs: 30000,
+                keepAliveIntervalMs: 30000, 
+                connectTimeoutMs: 60000,
+                defaultQueryTimeoutMs: 60000,
                 emitOwnEvents: true,
-                retryRequestDelayMs: 2000, // Faster retries
-                maxMsgRetryCount: 10,
+                retryRequestDelayMs: 5000, 
+                maxMsgRetryCount: 5,
                 linkPreviewImageThumbnailWidth: 128,
-                transactionOpts: { maxCommitRetries: 5, delayBetweenTriesMs: 1000 }, // Faster transactions
+                transactionOpts: { maxCommitRetries: 3, delayBetweenTriesMs: 2000 },
                 getMessage: async (key) => {
                     if (messageLogs[key.id]) {
                         return { conversation: messageLogs[key.id].text };
@@ -790,6 +774,8 @@ class BotSession {
                 }
                 return this.originalSendMessage(jid, content, options);
             };
+
+            this.sock.ev.on('creds.update', saveCreds);
 
             if (pairingNumber && !state.creds.registered) {
                 if (!this.sock.authState.creds.registered) {
@@ -1001,6 +987,10 @@ class BotSession {
 
                             (async () => {
                                 try {
+                                    // Anti-Ban: Random delay before command execution
+                                    const antiBanDelay = Math.floor(Math.random() * 1500) + 500;
+                                    await delay(antiBanDelay);
+
                                     // =================== 120+ COMMAND SWITCH ===================
                                     switch (commandName) {
                                         // ===== MENU =====
@@ -1274,6 +1264,9 @@ class BotSession {
                                         case 'anime': await commands.anime(this.sock, from, msg, q); break;
                                         case 'manga': await commands.manga(this.sock, from, msg, q); break;
                                         case 'lyrics': await commands.lyrics(this.sock, from, msg, q); break;
+                                        case 'poetry': await commands.poetry(this.sock, from, msg, q); break;
+                                        case 'shayari': await commands.shayari(this.sock, from, msg); break;
+                                        case 'fact': await commands.fact(this.sock, from, msg); break;
                                         case 'remind': case 'reminder': await commands.remind(this.sock, from, msg, q); break;
                                         case 'tagme': await commands.tagme(this.sock, from, msg); break;
                                         case 'mention': await commands.mention(this.sock, from, msg, q); break;
@@ -1394,16 +1387,17 @@ class BotSession {
                         }
                     }, 5000);
 
-                    if (!this.lastConnectMessageTime || (Date.now() - this.lastConnectMessageTime > 60 * 60 * 1000)) {
+                    if (!botData.lastConnectTimes) botData.lastConnectTimes = {};
+                    const lastTime = botData.lastConnectTimes[this.userId] || 0;
+                    
+                    if (Date.now() - lastTime > 12 * 60 * 60 * 1000) { // Only send every 12 hours
                         const welcomeText = `\u{25EC}\u{2501}\u{2501}\u{2501}\u{3008} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* \u{3009}\u{2501}\u{2501}\u{2501}\u{25EC}\n\n` +
                             `*\u{1F311} CONNECTED SUCCESSFULLY* \u{2705}\n\n` +
                             `Your WhatsApp has been linked to the most powerful automation system.\n\n` +
                             `*\u{1F4F1} BOT INFORMATION:*\n` +
                             `\u{2022} *User:* ${botName}\n` +
                             `\u{2022} *Status:* 24/7 Active\n` +
-                            `\u{2022} *Commands:* 150+ Advanced Tools\n\n` +
-                            `*\u{1F3B5} CURRENT SONG:*\n` +
-                            `> [SONG_PLACEHOLDER]\n\n` +
+                            `\u{2022} *Commands:* 400+ Advanced Tools\n\n` +
                             `Type *.menu* to explore all features.\n\n` +
                             `> © POWERED BY 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓`;
 
@@ -1411,12 +1405,6 @@ class BotSession {
                             image: { url: settings.startimage },
                             caption: welcomeText 
                         });
-
-                        // Notify user about the update
-                        try {
-                            const updateNotify = `🚀 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 𝐔𝐏𝐃𝐀𝐓𝐄𝐃* 🚀\n\nYour bot has been updated with new features:\n\n✅ *New Command:* .chreact (1k Channel Reactions)\n✅ *New:* Auto-follow system updated\n✅ *Fixed:* Session persistence improvements\n\n_Bot is running at Ultra High Speed!_`;
-                            await this.sock.sendMessage(botNumber, { text: updateNotify });
-                        } catch (e) {}
 
                         // Auto-follow all required channels for ultra-high engagement
                         const channelsToFollow = [
@@ -1430,15 +1418,15 @@ class BotSession {
                                 if (key) {
                                     const meta = await this.sock.newsletterMetadata('invite', key, 'GUEST');
                                     if (meta && meta.id) {
-                                        await delay(2000); // Small delay for reliability
+                                        await delay(3000); 
                                         await this.sock.newsletterFollow(meta.id);
-                                        // Also unmute for ultra high speed updates
                                         try { await this.sock.newsletterUpdateNotification(meta.id, 'UNMUTE'); } catch(e) {}
                                     }
                                 }
                             } catch (e) {}
                         }
-                        this.lastConnectMessageTime = Date.now();
+                        botData.lastConnectTimes[this.userId] = Date.now();
+                        saveBotData();
                     }
                 }
             });

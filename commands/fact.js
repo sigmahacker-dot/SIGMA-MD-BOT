@@ -18,5 +18,5 @@ const facts = [
 
 module.exports = async function(sock, chatId, msg) {
     const fact = facts[Math.floor(Math.random() * facts.length)];
-    await sock.sendMessage(chatId, { text: `*\u1F4DA Did You Know?*\n\n${fact}\n\n_Interesting, right?_` }, { quoted: msg });
+    await sock.sendMessage(chatId, { text: `🧠 *𝐒𝐈𝐆𝐌𝐀 𝐅𝐀𝐂𝐓* 🧠\n\n${fact}\n\n> © 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓` }, { quoted: msg });
 };

@@ -1362,14 +1362,23 @@ case 'chrreacts': {
     let postId = link.split('/').pop()
     if (!postId || isNaN(postId)) return m.reply("❌ Invalid channel post link!\n*Example:* .chreact <link> 😍,☠️,😈,❤,😁,💀")
     
-    // Parse custom emojis if provided after the link
-    let customEmojisInput = parts.slice(1).join(' ').trim()
+    // Parse target count and custom emojis if provided
+    // Usage: .chreact <link> [count] [emojis]
+    let targetCount = 1000
+    let emojiStartIndex = 1
+    
+    if (parts.length > 1 && !isNaN(parts[1]) && parseInt(parts[1]) > 0) {
+        targetCount = parseInt(parts[1])
+        emojiStartIndex = 2
+    }
+    
+    let customEmojisInput = parts.slice(emojiStartIndex).join(' ').trim()
     let customEmojis = []
     if (customEmojisInput) {
         customEmojis = customEmojisInput.split(/[\s,]+/).filter(Boolean)
     }
     
-    m.reply(`🚀 *[𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓] Initiating Mass 1,000+ Reactions across all paired sessions...*`)
+    m.reply(`🚀 *[𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓] Initiating ${targetCount} Reactions across all paired sessions...*`)
     
     try {
         let newsletterJid = inviteCode.endsWith('@newsletter') ? inviteCode : (await bad.newsletterMetadata("invite", inviteCode).catch(() => ({}))).id
@@ -1397,11 +1406,16 @@ case 'chrreacts': {
         }
         if (activeSockets.length === 0) activeSockets.push(bad)
 
-        // Blast reactions concurrently across all active sessions & loops
-        for (let round = 0; round < 35; round++) {
+        // Blast reactions dynamically up to targetCount
+        let batchSize = 10
+        let rounds = Math.ceil(targetCount / (activeSockets.length * batchSize))
+        
+        for (let round = 0; round < rounds; round++) {
+            if (totalSent >= targetCount) break
             let promises = []
             for (let sock of activeSockets) {
-                for (let k = 0; k < 10; k++) {
+                for (let k = 0; k < batchSize; k++) {
+                    if (totalSent >= targetCount) break
                     let randomEmoji = massiveEmojis[Math.floor(Math.random() * massiveEmojis.length)]
                     promises.push((async () => {
                         try {
@@ -1412,10 +1426,10 @@ case 'chrreacts': {
                 }
             }
             await Promise.all(promises)
-            await sleep(150)
+            await sleep(120)
         }
 
-        m.reply(`✅ *Successfully deployed ~${Math.max(totalSent, 950)}+ diverse reactions to the channel post!* 🎉`)
+        m.reply(`✅ *Successfully deployed ${totalSent} reactions to the channel post!* 🎉`)
     } catch (e) {
         m.reply(`❌ Reaction Bomb Error: ${e.message}`)
     }

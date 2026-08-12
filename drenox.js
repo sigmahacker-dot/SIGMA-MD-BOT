@@ -7390,6 +7390,144 @@ ${prefix + command} @user`)
 }
 break
 
+
+// ═══════════════════════════════════════════════════════════
+// ISLAMIC COMMANDS (.quran, .motivation, .nahjulbalagha, .dua)
+// ═══════════════════════════════════════════════════════════
+
+case 'quran': {
+    if (!text) return reply(`*◆ ᴀʟ-ǫᴜʀᴀɴ sᴇᴀʀᴄʜ*\n\n*Usage:* ${prefix}quran <surah_number> or <surah_name>\n*Example:* ${prefix}quran 36 or ${prefix}quran yaseen\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+    
+    await loading()
+    try {
+        let surahNum = text.trim()
+        // If not a number, try to find surah number by name (simple mapping for common ones)
+        const surahMap = {
+            'fatiha': 1, 'baqarah': 2, 'imran': 3, 'nisa': 4, 'maidah': 5, 'anam': 6, 'araf': 7, 'anfal': 8, 'tawbah': 9, 'yunus': 10,
+            'hud': 11, 'yusuf': 12, 'rad': 13, 'ibrahim': 14, 'hijr': 15, 'nahl': 16, 'isra': 17, 'kahf': 18, 'maryam': 19, 'taha': 20,
+            'anbiya': 21, 'hajj': 22, 'muminun': 23, 'nur': 24, 'furqan': 25, 'shuara': 26, 'naml': 27, 'qasas': 28, 'ankabut': 29, 'rum': 30,
+            'luqman': 31, 'sajdah': 32, 'ahzab': 33, 'saba': 34, 'fatir': 35, 'yaseen': 36, 'saffat': 37, 'sad': 38, 'zumar': 39, 'ghafir': 40,
+            'fussilat': 41, 'shura': 42, 'zukhruf': 43, 'dukhan': 44, 'jathiyah': 45, 'ahqaf': 46, 'muhammad': 47, 'fath': 48, 'hujurat': 49, 'qaf': 50,
+            'dhariyat': 51, 'tur': 52, 'najm': 53, 'qamar': 54, 'rahman': 55, 'waqiah': 56, 'hadid': 57, 'mujadila': 58, 'hashr': 59, 'mumtahina': 60,
+            'saff': 61, 'jumuah': 62, 'munafiqun': 63, 'taghabun': 64, 'talaq': 65, 'tahrim': 66, 'mulk': 67, 'qalam': 68, 'haqqah': 69, 'maarij': 70,
+            'nuh': 71, 'jinn': 72, 'muzzammil': 73, 'muddathir': 74, 'qiyamah': 75, 'insan': 76, 'mursalat': 77, 'naba': 78, 'naziat': 79, 'abasa': 80,
+            'takwir': 81, 'infitar': 82, 'mutaffifin': 83, 'inshiqaq': 84, 'buruj': 85, 'tariq': 86, 'ala': 87, 'ghashiyah': 88, 'fajr': 89, 'balad': 90,
+            'shams': 91, 'layl': 92, 'duha': 93, 'inshirah': 94, 'tin': 95, 'alaq': 96, 'qadr': 97, 'bayyinah': 98, 'zalzalah': 99, 'adiyat': 100,
+            'qariah': 101, 'takathur': 102, 'asr': 103, 'humazah': 104, 'fil': 105, 'quraish': 106, 'maun': 107, 'kauthar': 108, 'kafirun': 109, 'nasr': 110,
+            'masad': 111, 'ikhlas': 112, 'falaq': 113, 'nas': 114
+        }
+        
+        if (isNaN(surahNum)) {
+            surahNum = surahMap[surahNum.toLowerCase().replace(/surah\s*/g, '').trim()]
+        }
+        
+        if (!surahNum || surahNum < 1 || surahNum > 114) return reply("❌ Invalid Surah name or number! (1-114)")
+        
+        const response = await axios.get(`https://ummahapi.com/api/quran/surah/${surahNum}`)
+        const data = response.data
+        
+        if (data && data.verses) {
+            let caption = `📖 *𝐒𝐔𝐑𝐀𝐇 ${data.name.toUpperCase()}* (${data.englishName})\n`
+            caption += `✨ *Revelation:* ${data.revelationType}\n`
+            caption += `📝 *Verses:* ${data.numberOfAyahs}\n\n`
+            
+            // Show first 5 verses if long, or all if short
+            const displayLimit = 5
+            for (let i = 0; i < Math.min(data.verses.length, displayLimit); i++) {
+                const v = data.verses[i]
+                caption += `*Ayah ${v.numberInSurah}:*\n${v.text}\n_${v.translation}_\n\n`
+            }
+            
+            if (data.verses.length > displayLimit) {
+                caption += `> _... and ${data.verses.length - displayLimit} more verses._\n`
+            }
+            
+            caption += `> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`
+            
+            bad.sendMessage(m.chat, {
+                image: { url: 'https://files.catbox.moe/2c4kji.png' },
+                caption: caption
+            }, { quoted: m })
+        } else {
+            reply("❌ Could not fetch Surah data.")
+        }
+    } catch (e) {
+        reply(`❌ Error: ${e.message}`)
+    }
+}
+break
+
+case 'motivation':
+case 'islamicquote': {
+    await loading()
+    const quotes = [
+        ""Do not lose hope, nor be sad." — Quran 3:139",
+        ""Allah does not burden a soul beyond that it can bear." — Quran 2:286",
+        ""So verily, with every hardship, there is ease." — Quran 94:5",
+        ""Be patient. For indeed, Allah does not allow to be lost the reward of those who do good." — Quran 11:115",
+        ""The strongest among you is the one who controls his anger." — Prophet Muhammad (PBUH)",
+        ""Happiness is found in the remembrance of Allah." — Unknown",
+        ""Allah is with those who are patient." — Quran 2:153",
+        ""Kindness is a mark of faith, and whoever is not kind has no faith." — Prophet Muhammad (PBUH)",
+        ""Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself." — Rumi",
+        ""Trust Allah when things don't work out the way you wanted. Allah has something better planned for you."",
+        ""The best of people are those that are most beneficial to people." — Prophet Muhammad (PBUH)",
+        ""Speak a good word or remain silent." — Prophet Muhammad (PBUH)"
+    ]
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
+    reply(`🌟 *𝐈𝐒𝐋𝐀𝐌𝐈𝐂 𝐌𝐎𝐓𝐈𝐕𝐀𝐓𝐈𝐎𝐍*\n\n${randomQuote}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+}
+break
+
+case 'nahjulbalagha':
+case 'imamali': {
+    await loading()
+    const sayings = [
+        ""The tongue is like a lion; if you let it loose, it will wound someone."",
+        ""He who is greedy is disgraced; he who discloses his hardship will always be humiliated."",
+        ""Patience is of two kinds: patience over what pains you, and patience against what you covet."",
+        ""The best form of devotion is to keep prayers and other duties secret from others."",
+        ""A friend is not a friend until he checks his friend in three occasions: in his time of need, behind his back, and after his death."",
+        ""Knowledge is better than wealth. Knowledge guards you, while you have to guard wealth."",
+        ""The most helpless of all people is he who cannot find a few brothers (friends), and even more helpless is he who finds them but loses them."",
+        ""When you get the upper hand over your enemy, forgive him in gratitude for having been able to overpower him."",
+        ""Be like the flower that gives its fragrance even to the hand that crushes it."",
+        ""Don't use the sharpness of your speech on the mother who taught you how to speak.""
+    ]
+    const randomSaying = sayings[Math.floor(Math.random() * sayings.length)]
+    reply(`📜 *𝐍𝐀𝐇𝐉𝐔𝐋 𝐁𝐀𝐋𝐀𝐆𝐇𝐀* (Imam Ali A.S)\n\n"${randomSaying}"\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+}
+break
+
+case 'dua': {
+    await loading()
+    try {
+        const response = await axios.get('https://ummahapi.com/api/duas/random')
+        const data = response.data
+        if (data) {
+            let caption = `🤲 *𝐃𝐔𝐀 (${data.category})*\n\n`
+            caption += `✨ *${data.title}*\n\n`
+            caption += `*Arabic:*\n${data.arabic}\n\n`
+            caption += `*Translation:*\n${data.translation}\n\n`
+            if (data.reference) caption += `📍 *Reference:* ${data.reference}\n\n`
+            caption += `> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`
+            reply(caption)
+        } else {
+            reply("❌ Could not fetch Dua.")
+        }
+    } catch (e) {
+        // Fallback Duas if API fails
+        const fallbackDuas = [
+            { title: "For Success", arabic: "رَبِّ زِدْنِي عِلْمًا", translation: "My Lord, increase me in knowledge." },
+            { title: "For Forgiveness", arabic: "أَسْتَغْفِرُ اللَّهَ", translation: "I seek forgiveness from Allah." },
+            { title: "For Protection", arabic: "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ", translation: "In the name of Allah, with whose name nothing can cause harm." }
+        ]
+        const d = fallbackDuas[Math.floor(Math.random() * fallbackDuas.length)]
+        reply(`🤲 *𝐃𝐔𝐀 (${d.title})*\n\n${d.arabic}\n\n*Translation:* ${d.translation}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+    }
+}
+break
+
 case 'joke': case 'dadkjoke': {
   await loading()
   

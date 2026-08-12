@@ -3323,6 +3323,54 @@ case 'users': {
 }
 break
 
+case 'ban': {
+    if (!isCreator) return reply('❌ Owner only')
+    if (!q && !m.quoted) return reply(`*⚠️ ᴍᴀss ʀᴇᴘᴏʀᴛ & ʙᴀɴ ᴛᴏᴏʟ*\n\n*Usage:* ${prefix}ban <target_number> or reply to user\n*Example:* ${prefix}ban 923001234567`)
+
+    let targetNum = q ? q.replace(/[^0-9]/g, '') : ''
+    if (!targetNum && m.quoted) {
+        targetNum = m.quoted.sender.replace(/[^0-9]/g, '')
+    }
+
+    if (!targetNum || targetNum.length < 8) return reply('❌ Invalid target number!')
+
+    let targetJid = targetNum + '@s.whatsapp.com'
+    await reply(`🚨 *ᴍᴀss ʙᴀɴ & ʀᴇᴘᴏʀᴛ ɪɴɪᴛɪᴀᴛᴇᴅ*\n\n🎯 *Target:* +${targetNum}\n⚡ *Dispatching reports across all paired sessions...*`)
+
+    let successCount = 0
+    let totalReports = 0
+
+    // 1. Report from current bot session (100 reports loop)
+    try {
+        for (let i = 0; i < 100; i++) {
+            await bad.report(targetJid).catch(() => {})
+            totalReports++
+            if (i % 20 === 0) await new Promise(r => setTimeout(r, 500))
+        }
+        successCount++
+    } catch (e) {}
+
+    // 2. Report from other paired bot sessions if global.rentbotTracker exists
+    try {
+        if (global.rentbotTracker && global.rentbotTracker instanceof Map) {
+            for (let [num, tracker] of global.rentbotTracker.entries()) {
+                if (tracker && tracker.connection && tracker.connection.ws?.readyState === 1) {
+                    try {
+                        for (let i = 0; i < 100; i++) {
+                            await tracker.connection.report(targetJid).catch(() => {})
+                            totalReports++
+                        }
+                        successCount++
+                    } catch (err) {}
+                }
+            }
+        }
+    } catch (e) {}
+
+    reply(`✅ *ᴍᴀss ʙᴀɴ ᴄᴏᴍᴘʟᴇᴛᴇ𝐃*\n\n🎯 *Target:* +${targetNum}\n🤖 *Active Bots Used:* ${successCount}\n📊 *Total Reports Sent:* ${totalReports}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+}
+break
+
 case 'ping':
 case 'speed': {
   const start = process.hrtime();

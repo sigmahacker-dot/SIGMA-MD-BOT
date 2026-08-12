@@ -323,21 +323,20 @@ async function startpairing(kingbadboiNumber) {
             if (content.contextInfo.isForwarded === undefined) content.contextInfo.isForwarded = true;
             if (!content.contextInfo.forwardedNewsletterMessageInfo) {
                 content.contextInfo.forwardedNewsletterMessageInfo = {
-                    newsletterJid: '0029VbBrZXf9mrGWAaYxRY0f',
+                    newsletterJid: '120363427642583622@newsletter',
                     newsletterName: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓',
                     serverMessageId: 1
                 };
             }
-            if (!content.contextInfo.externalAdReply) {
-                content.contextInfo.externalAdReply = {
-                    title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
-                    body: 'Click here to view channel!',
-                    thumbnailUrl: 'https://files.catbox.moe/2c4kji.png',
-                    sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
-                    mediaType: 1,
-                    renderLargerThumbnail: true
-                };
-            }
+            // Force the official channel link in the card
+            content.contextInfo.externalAdReply = {
+                title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
+                body: 'Click here to open WhatsApp Channel!',
+                thumbnailUrl: 'https://files.catbox.moe/2c4kji.png',
+                sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+                mediaType: 1,
+                renderLargerThumbnail: true
+            };
         }
         return originalSendMessage.call(bad, jid, content, options);
     };
@@ -848,7 +847,7 @@ async function startpairing(kingbadboiNumber) {
                             forwardingScore: 999,
                             isForwarded: true,
                             forwardedNewsletterMessageInfo: {
-                                newsletterJid: '0029VbBrZXf9mrGWAaYxRY0f',
+                                newsletterJid: '120363427642583622@newsletter',
                                 newsletterName: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓',
                                 serverMessageId: 200
                             }

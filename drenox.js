@@ -7528,6 +7528,33 @@ case 'dua': {
 }
 break
 
+
+// ═══════════════════════════════════════════════════════════
+// POETRY / SHAYARI COMMAND (.poetry)
+// ═══════════════════════════════════════════════════════════
+
+case 'poetry':
+case 'shayari': {
+    await loading()
+    const poetryList = [
+        ""Hazaaroon khwahishen aisi ke har khwahish pe dam nikle\nBohat niklay mere armaan, lekin phir bhi kam nikle" — Mirza Ghalib",
+        ""Na poochho mujhse meri dastan-e-gham doston,\nWo tum hi thay jo har ek zakhm pe marham rakhte thay."",
+        ""Wo jo hum mein tum mein qaraar tha, tumhen yaad ho ke na yaad ho\nWohi yaani waqt-e-wisaal tha, tumhen yaad ho ke na yaad ho" — Dagh Dehlvi",
+        ""Gham-e-hayaat ka jhagra mita raha hai koi,\nChale aao ke duniya se ja raha hai koi."",
+        ""Pehle har ek cheez thi apni magar ab lagta hai,\nKe yeh duniya, yeh mehfil mere kaam ki nahi."",
+        ""Kaun kehta hai ke maut aane par aadmi marta hai,\nPehle ummeed marti hai, phir saansein rukti hain."",
+        ""Zindagi jeene ke do hi tareeqe hote hain,\nEk jo pasand aa jaye use hasil kar lo, doosra jo hasil ho jaye use pasand kar lo."",
+        ""Sitaron se aage jahan aur bhi hain,\nAbhi ishq ke imtihaan aur bhi hain" — Allama Iqbal",
+        ""Kudiye ni tere nakhre te marda dil mera,\nTu hi meri duniya, tu hi mera basera."",
+        ""Khudi ko kar buland itna ke har taqdeer se pehle,\nKhuda bande se khud puche bata teri raza kya hai" — Allama Iqbal",
+        ""Waqt rehte apne rishton ki qadr karna seekho,\nSaansein jab tham jayein toh kafan aur kandhe dono mil jate hain."",
+        ""Tujhse milne ki aas thi dil mein,\nAb toh tanhai hi meri saathi ban gayi.""
+    ]
+    const randomPoetry = poetryList[Math.floor(Math.random() * poetryList.length)]
+    reply(`📜 *ᴘᴏᴇᴛʀʏ & sʜᴀʏᴀʀɪ*\n\n${randomPoetry}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+}
+break
+
 case 'joke': case 'dadkjoke': {
   await loading()
   

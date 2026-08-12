@@ -176,11 +176,7 @@ async function validateSession(kingbadboiNumber) {
     
     try {
         const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
-        if (!creds.me || !creds.me.id) {
-            console.log(chalk.yellow(`⚠️ Invalid session for ${kingbadboiNumber}, cleaning up...`));
-            deleteFolderRecursive(sessionPath);
-            return false;
-        }
+        // Do not delete session folder on restart, just return true if creds exist
         return true;
     } catch (e) {
         console.log(chalk.red(`❌ Corrupt session for ${kingbadboiNumber}: ${e.message}`));

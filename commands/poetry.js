@@ -6,7 +6,12 @@ const poetries = [
     "Hazaaron khwahishein aisi ki har khwahish pe dam nikle,\nBahut nikle mere armaan, lekin phir bhi kam nikle.",
     "Dil-e-nadaan tujhe hua kya hai,\nAakhir is dard ki dawa kya hai.",
     "Hum ko un se wafa ki hai umeed,\nJo nahi jaante wafa kya hai.",
-    "Ishq ne Ghalib nikamma kar diya,\nWarna hum bhi aadmi the kaam ke."
+    "Ishq ne Ghalib nikamma kar diya,\nWarna hum bhi aadmi the kaam ke.",
+    "Khudi ko kar buland itna ke har taqdeer se pehle,\nKhuda bande se khud pooche bata teri raza kya hai.",
+    "Sitaron se aage jahan aur bhi hain,\nAbhi ishq ke imtihan aur bhi hain.",
+    "Main akela hi chala tha janib-e-manzil magar,\nLog saath aate gaye aur karvan banta gaya.",
+    "Na kisi ki aankh ka noor hoon, na kisi ke dil ka qaraar hoon,\nJo kisi ke kaam na aa sake, main woh ek musht-e-ghubaar hoon.",
+    "Yun hi dukh nahi hota kisi ko chahne ka,\nBada hausla chahiye khud ko mitane ka."
 ];
 
 module.exports = async function(sock, chatId, msg) {

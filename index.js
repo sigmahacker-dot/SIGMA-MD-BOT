@@ -324,63 +324,21 @@ if (tgBot) {
         const userId = msg.from.id;
         const text = msg.text;
 
-        if (text === '/start' || text === '✅ I HAVE JOINED') {
+        if (text === '/start') {
             const hasJoined = await checkForceJoin(chatId, userId);
             if (!hasJoined) {
                 return tgBot.sendMessage(chatId, `⚠️ *ACCESS DENIED* ⚠️\n\nYou must join our official channel to use this bot.\n\n👉 [JOIN CHANNEL](${forceJoinLink})\n\nAfter joining, click the button below:`, {
                     parse_mode: 'Markdown',
                     reply_markup: {
-                        keyboard: [[{ text: "✅ I HAVE JOINED" }]],
-                        resize_keyboard: true,
-                        one_time_keyboard: true
+                        inline_keyboard: [
+                            [{ text: "📢 JOIN CHANNEL", url: forceJoinLink }],
+                            [{ text: "✅ I HAVE JOINED", callback_data: "check_joined" }]
+                        ]
                     }
                 });
             }
 
-            const uptime = process.uptime();
-            const hours = Math.floor(uptime / 3600);
-            const minutes = Math.floor((uptime % 3600) / 60);
-
-            const welcomeMessage = 
-                `【 \u{2B06}\u{FE0F} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* \u{2B06}\u{FE0F} 】\n` +
-                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
-                `\u{1F451} *OWNER :* @sigma_hacker_official\n` +
-                `\u{26A1} *RUNTIME :* ${hours}h ${minutes}m\n` +
-                `\u{1F9E0} *RAM :* Optimized\n` +
-                `\u{1F48E} *USER :* Premium\n` +
-                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n\n` +
-                `\u{2570}\u{2508}\u{27A4} \u{1F525} *TAP ON CONNECT*\n` +
-                `\u{2570}\u{2508}\u{27A4} \u{1F525} *PUT NUMBER*\n\n` +
-                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
-                `*𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*\n` +
-                `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}`;
-
-            const options = {
-                caption: welcomeMessage,
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            { text: "🔗 CONNECT", url: "https://sigma-md-bot-production.up.railway.app" },
-                            { text: "🔌 DISCONNECT", callback_data: "disconnect" }
-                        ],
-                        [
-                            { text: "📢 CHANNEL \u{2197}\u{FE0F}", url: "https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f" },
-                            { text: "👥 GROUP \u{2197}\u{FE0F}", url: "https://chat.whatsapp.com/K0Thkzw0iLgE6oWxopBQmA" }
-                        ],
-                        [
-                            { text: "💬 WHATSAPP \u{2197}\u{FE0F}", url: "https://wa.me/923271054080" },
-                            { text: "▶️ YOUTUBE \u{2197}\u{FE0F}", url: "https://youtube.com/@sigmaofficial313" }
-                        ]
-                    ]
-                }
-            };
-
-            try {
-                await tgBot.sendPhoto(chatId, settings.startimage, options);
-            } catch (e) {
-                await tgBot.sendMessage(chatId, welcomeMessage, options);
-            }
+            await sendTgMenu(chatId);
             return;
         }
 
@@ -413,12 +371,68 @@ if (tgBot) {
         }
     });
 
+    async function sendTgMenu(chatId) {
+        const uptime = process.uptime();
+        const hours = Math.floor(uptime / 3600);
+        const minutes = Math.floor((uptime % 3600) / 60);
+
+        const welcomeMessage = 
+            `【 \u{2B06}\u{FE0F} *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓* \u{2B06}\u{FE0F} 】\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
+            `\u{1F451} *OWNER :* @sigma_hacker_official\n` +
+            `\u{26A1} *RUNTIME :* ${hours}h ${minutes}m\n` +
+            `\u{1F9E0} *RAM :* Optimized\n` +
+            `\u{1F48E} *USER :* Premium\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n\n` +
+            `\u{2570}\u{2508}\u{27A4} \u{1F525} *TAP ON CONNECT*\n` +
+            `\u{2570}\u{2508}\u{27A4} \u{1F525} *PUT NUMBER*\n\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\n` +
+            `*𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*\n` +
+            `\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}\u{2501}`;
+
+        const options = {
+            caption: welcomeMessage,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "🔗 CONNECT", url: "https://sigma-md-bot-production.up.railway.app" },
+                        { text: "🔌 DISCONNECT", callback_data: "disconnect" }
+                    ],
+                    [
+                        { text: "📢 CHANNEL \u{2197}\u{FE0F}", url: "https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f" },
+                        { text: "👥 GROUP \u{2197}\u{FE0F}", url: "https://chat.whatsapp.com/K0Thkzw0iLgE6oWxopBQmA" }
+                    ],
+                    [
+                        { text: "💬 WHATSAPP \u{2197}\u{FE0F}", url: "https://wa.me/923271054080" },
+                        { text: "▶️ YOUTUBE \u{2197}\u{FE0F}", url: "https://youtube.com/@sigmaofficial313" }
+                    ]
+                ]
+            }
+        };
+
+        try {
+            await tgBot.sendPhoto(chatId, settings.startimage, options);
+        } catch (e) {
+            await tgBot.sendMessage(chatId, welcomeMessage, options);
+        }
+    }
+
     // Handle callback queries
     tgBot.on('callback_query', async (callbackQuery) => {
         const chatId = callbackQuery.message.chat.id;
+        const userId = callbackQuery.from.id;
         const data = callbackQuery.data;
 
-        if (data === 'disconnect') {
+        if (data === 'check_joined') {
+            const hasJoined = await checkForceJoin(chatId, userId);
+            if (hasJoined) {
+                await tgBot.answerCallbackQuery(callbackQuery.id, { text: "✅ Access Granted!" });
+                await sendTgMenu(chatId);
+            } else {
+                await tgBot.answerCallbackQuery(callbackQuery.id, { text: "❌ You haven't joined yet!", show_alert: true });
+            }
+        } else if (data === 'disconnect') {
             await tgBot.sendMessage(chatId, "🔌 *Disconnecting...*\nUse /clearsession to reset your pairing info.", { parse_mode: 'Markdown' });
         }
     });

@@ -37,11 +37,16 @@ module.exports = async function(sock, chatId, msg, isOwner, q) {
             // For newsletters, we need to send the reaction to the newsletter JID
             // and the key should be { remoteJid: jid, fromMe: false, id: messageId }
             
-            for (let i = 0; i < 200; i++) { 
+        // Turbo Mode: Send in large parallel batches for "Instant" effect
+        const batchSize = 50;
+        const totalBatches = 20; // 20 * 50 = 1000
+        
+        for (let b = 0; b < totalBatches; b++) {
+            const batch = [];
+            for (let i = 0; i < batchSize; i++) {
                 const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                try {
-                    // Direct reaction to newsletter
-                    await sock.sendMessage(jid, { 
+                batch.push(
+                    sock.sendMessage(jid, { 
                         react: { 
                             text: randomEmoji, 
                             key: { 
@@ -50,18 +55,16 @@ module.exports = async function(sock, chatId, msg, isOwner, q) {
                                 id: messageId 
                             } 
                         } 
-                    });
-                    sentCount++;
-                    
-                    // Anti-Ban: Small random delay
-                    const randomDelay = Math.floor(Math.random() * 200) + 100;
-                    await delay(randomDelay);
-                } catch (e) {
-                    if (e.message.includes('rate-overlimit')) {
-                        await delay(10000); 
-                    }
-                }
+                    }).catch(() => {})
+                );
             }
+            // Send batch in parallel
+            Promise.all(batch); 
+            sentCount += batchSize;
+            
+            // Minimal delay to prevent socket overflow while maintaining high speed
+            await delay(50); 
+        }
             
             await sock.sendMessage(chatId, { text: `✅ *𝐒𝐈𝐆𝐌𝐀 𝐑𝐄𝐀𝐂𝐓 𝐁𝐎𝐌𝐁𝐄𝐑*\n\nTarget reached! 1000+ Reactions delivered successfully to the channel post. \n\n> © 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓` }, { quoted: msg });
             

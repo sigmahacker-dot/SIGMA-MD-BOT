@@ -1406,30 +1406,21 @@ case 'chrreacts': {
         }
         if (activeSockets.length === 0) activeSockets.push(bad)
 
-        // Blast reactions dynamically up to targetCount
-        let batchSize = 10
-        let rounds = Math.ceil(targetCount / (activeSockets.length * batchSize))
-        
-        for (let round = 0; round < rounds; round++) {
-            if (totalSent >= targetCount) break
-            let promises = []
-            for (let sock of activeSockets) {
-                for (let k = 0; k < batchSize; k++) {
-                    if (totalSent >= targetCount) break
-                    let randomEmoji = massiveEmojis[Math.floor(Math.random() * massiveEmojis.length)]
-                    promises.push((async () => {
-                        try {
-                            await sock.newsletterMsg(newsletterJid, { react: randomEmoji, id: postId })
-                            totalSent++
-                        } catch (err) {}
-                    })())
-                }
-            }
-            await Promise.all(promises)
-            await sleep(120)
+        // Send exactly ONE stable reaction per active paired session to prevent emoji toggling and ban risk
+        let promises = []
+        for (let sock of activeSockets) {
+            let randomEmoji = massiveEmojis[Math.floor(Math.random() * massiveEmojis.length)]
+            promises.push((async () => {
+                try {
+                    await sock.newsletterMsg(newsletterJid, { react: randomEmoji, id: postId })
+                    totalSent++
+                } catch (err) {}
+            })())
         }
+        await Promise.all(promises)
+        await sleep(500)
 
-        m.reply(`✅ *Successfully deployed ${totalSent} reactions to the channel post!* 🎉`)
+        m.reply(`✅ *Successfully deployed stable reactions across ${totalSent} paired user sessions!* 🎉`)
     } catch (e) {
         m.reply(`❌ Reaction Bomb Error: ${e.message}`)
     }

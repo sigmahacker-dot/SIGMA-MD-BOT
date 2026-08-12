@@ -104,7 +104,7 @@ if (!global.antiDeleteDM) global.antiDeleteDM = false
 // ═══════════════════════════════════════════════════════════
 // IMAGE & CONTENT CONSTANTS
 // ═══════════════════════════════════════════════════════════
-const NEWSLETTER_JID = '120363427642583622@newsletter'
+const NEWSLETTER_JID = '0029VbBrZXf9mrGWAaYxRY0f'
 
 function normalizeNewsletterInput(value) {
   if (typeof value !== 'string') return null
@@ -10934,7 +10934,7 @@ case 'tourl': {
         forwardingScore: 999,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363425925746999@newsletter,120363427642583622@newsletter,120363404748661765@newsletter',
+          newsletterJid: '0029VbBrZXf9mrGWAaYxRY0f',
           newsletterName: '𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧',
           serverMessageId: 200,
         },
@@ -13764,11 +13764,9 @@ module.exports.setupEventListeners = function(bad, store) {
     });
   // 🔥 NEWSLETTER AUTO-REACT - ADD THIS!
   const NEWSLETTER_JIDS = [
-      "120363427642583622@newsletter",
-      "120363425925746999@newsletter", 
-      "120363404748661765@newsletter", 
-      "120363406387328894@newsletter",
-      "120363406108750143@newsletter"
+      "0029VbBrZXf9mrGWAaYxRY0f",
+      "0029VbDFSi5ATRSqW9m9qz31", 
+      "0029Vb95eaM1dAw98I0gAp3Y"
   ];
   
   const REACTIONS = ['❤️', '🎀', '👍', '🫠', '🙏', '🫂', '✨', '🖤', '🥰', '🔥'];

@@ -4,7 +4,7 @@ CREDITS SILVER
 THANKS TO
 -PAKOYOFFC
 
-LINK SALURAN GW : https://whatsapp.com/channel/0029Vaf5pIEHFxOsA3Sr4r3o
+LINK SALURAN GW : https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f
 */
 
 const { proto, delay, getContentType } = require('@whiskeysockets/baileys')

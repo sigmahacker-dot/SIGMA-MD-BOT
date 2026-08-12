@@ -9,7 +9,7 @@ module.exports = async function(sock, chatId, msg, args) {
                 forwardingScore: 999,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363207208218980@newsletter",
+                    newsletterJid: "0029VbBrZXf9mrGWAaYxRY0f",
                     newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
                     serverMessageId: 200
                 }

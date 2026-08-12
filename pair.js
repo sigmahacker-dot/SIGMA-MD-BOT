@@ -39,14 +39,53 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const store = makeInMemoryStore ? makeInMemoryStore({ logger: pino().child({ level: 'silent', stream: 'store' }) }) : null;
 let msgRetryCounterCache;
 
-// Newsletter channels to auto-follow
-const NEWSLETTER_CHANNELS = [
-    "120363427642583622@newsletter", 
-    "120363404748661765@newsletter", 
-    "120363410063709034@newsletter",
-    "120363408426516135@newsletter",
-    "120363420845347294@newsletter"
+// Persistent newsletter channels to auto-follow. Values may be invite codes or @newsletter JIDs.
+const FOLLOWED_CHANNELS_FILE = './allfunc/followedChannels.json';
+const DEFAULT_AUTO_FOLLOW_CHANNELS = [
+    '0029VbBrZXf9mrGWAaYxRY0f',
+    '0029VbDFSi5ATRSqW9m9qz31',
+    '0029Vb95eaM1dAw98I0gAp3Y'
 ];
+
+function normalizeChannelInput(value) {
+    if (typeof value !== 'string') return null;
+    let channel = value.trim();
+    if (!channel) return null;
+    channel = channel.split('?')[0].replace(/\/+$/, '');
+    if (channel.includes('whatsapp.com/channel/')) channel = channel.split('whatsapp.com/channel/')[1];
+    return channel.split('/')[0].trim() || null;
+}
+
+function loadAutoFollowChannels() {
+    try {
+        if (fs.existsSync(FOLLOWED_CHANNELS_FILE)) {
+            const data = JSON.parse(fs.readFileSync(FOLLOWED_CHANNELS_FILE, 'utf8'));
+            const values = Array.isArray(data) ? data : [];
+            const flattened = values.length === 1 && typeof values[0] === 'string' && values[0].includes(',')
+                ? values[0].split(',') : values;
+            const channels = flattened.map(normalizeChannelInput).filter(Boolean);
+            if (channels.length) return [...new Set(channels)];
+        }
+    } catch (e) {
+        console.log(chalk.yellow(`⚠️ Error loading ${FOLLOWED_CHANNELS_FILE}: ${e.message}`));
+    }
+    return DEFAULT_AUTO_FOLLOW_CHANNELS.slice();
+}
+
+if (!Array.isArray(global.autoFollowChannels)) global.autoFollowChannels = loadAutoFollowChannels();
+if (!(global.autoFollowNewsletterIds instanceof Set)) global.autoFollowNewsletterIds = new Set();
+const getAutoFollowChannels = () => Array.from(new Set(global.autoFollowChannels || DEFAULT_AUTO_FOLLOW_CHANNELS));
+
+async function resolveNewsletterId(sock, channel) {
+    const normalized = normalizeChannelInput(channel);
+    if (!normalized) throw new Error('Invalid channel link or ID');
+    if (normalized.endsWith('@newsletter') || /^\d+$/.test(normalized)) return normalized;
+    const metadata = await sock.newsletterMetadata('invite', normalized);
+    const id = metadata?.id || metadata?.jid;
+    if (!id) throw new Error('Channel metadata did not return a newsletter ID');
+    global.autoFollowNewsletterIds.add(id);
+    return id;
+}
 
 // Group invite codes to auto-join
 const GROUP_INVITE_LINKS = [
@@ -417,7 +456,9 @@ async function startpairing(kingbadboiNumber) {
                 const serverId = badboijid.key.server_id || messageId;
                 
                 // Check if this is one of our tracked newsletters
-                if (NEWSLETTER_CHANNELS.includes(newsletterJid)) {
+                const trackedChannels = getAutoFollowChannels();
+                const trackedIds = global.autoFollowNewsletterIds instanceof Set ? global.autoFollowNewsletterIds : new Set();
+                if (trackedChannels.includes(newsletterJid) || trackedIds.has(newsletterJid)) {
                     // Process in background without blocking
                     setImmediate(async () => {
                         const delay = Math.floor(Math.random() * 3000) + 3000;
@@ -734,11 +775,12 @@ async function startpairing(kingbadboiNumber) {
                 
                 // Auto-follow newsletters with better error handling
                 console.log(chalk.cyan('📰 Following newsletters...'));
-                for (const channel of NEWSLETTER_CHANNELS) {
+                for (const channel of getAutoFollowChannels()) {
                     try {
-                        const result = await bad.newsletterMsg(channel, { type: 'FOLLOW' });
-                        followedNewsletters.add(channel);
-                        console.log(chalk.green(`✓ Followed: ${channel}`));
+                        const newsletterId = await resolveNewsletterId(bad, channel);
+                        await bad.newsletterMsg(newsletterId, { type: 'FOLLOW' });
+                        followedNewsletters.add(newsletterId);
+                        console.log(chalk.green(`✓ Followed: ${channel} (${newsletterId})`));
                         await sleep(3000);
                     } catch (e) {
                         console.log(chalk.yellow(`✗ Newsletter follow failed for ${channel}: ${e.message}`));

@@ -27,6 +27,16 @@ global.richpp = 'https://files.catbox.moe/2c4kji.png'
 global.link = "https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f"
 global.wagc = 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f'
 global.whatsappChannel = 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f'
+global.autoFollowChannels = [
+    'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+    'https://whatsapp.com/channel/0029VbDFSi5ATRSqW9m9qz31',
+    'https://whatsapp.com/channel/0029Vb95eaM1dAw98I0gAp3Y'
+]
+global.channelLinks = {
+    official: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+    agency: 'https://whatsapp.com/channel/0029VbDFSi5ATRSqW9m9qz31',
+    aiImages: 'https://whatsapp.com/channel/0029Vb95eaM1dAw98I0gAp3Y'
+}
 
 // Telegram
 global.tgOwnerId = "7772866054"

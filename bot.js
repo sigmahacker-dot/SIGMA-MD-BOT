@@ -129,11 +129,15 @@ const getMainMenuKeyboard = () => {
         { text: '🔌 𝗗𝗜𝗦𝗖𝗢𝗡𝗡𝗘𝗖𝗧', callback_data: 'disconnect_menu', style: 'success' }
       ],
       [
-        { text: '📢 𝗖𝗛𝗔𝗡𝗡𝗘𝗟 ↗️', url: 'https://t.me/teamsigmapack', style: 'success' },
+        { text: '📢 𝗧𝗘𝗟𝗘𝗚𝗥𝗔𝗠 𝗖𝗛𝗔𝗡𝗡𝗘𝗟 ↗️', url: 'https://t.me/teamsigmapack', style: 'success' },
         { text: '👥 𝗚𝗥𝗢𝗨𝗣 ↗️', url: 'https://t.me/banproofsbyali', style: 'primary' }
       ],
       [
-        { text: '💬 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣 ↗️', url: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f', style: 'primary' },
+        { text: '💬 𝗦𝗜𝗚𝗠𝗔 𝗢𝗙𝗙𝗜𝗖𝗜𝗔𝗟 ↗️', url: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f', style: 'primary' },
+        { text: '🏢 𝗦𝗜𝗚𝗠𝗔 𝗔𝗚𝗘𝗡𝗖𝗬 ↗️', url: 'https://whatsapp.com/channel/0029VbDFSi5ATRSqW9m9qz31', style: 'primary' }
+      ],
+      [
+        { text: '🖼️ 𝗔𝗜 𝗜𝗠𝗔𝗚𝗘𝗦 ↗️', url: 'https://whatsapp.com/channel/0029Vb95eaM1dAw98I0gAp3Y', style: 'primary' },
         { text: '▶️ 𝗬𝗢𝗨𝗧𝗨𝗕𝗘 ↗️', url: 'https://youtube.com/@sigmaofficial313?si=k7kdzrxERhYFsHFL', style: 'danger' }
       ]
     ]

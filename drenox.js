@@ -106,6 +106,27 @@ if (!global.antiDeleteDM) global.antiDeleteDM = false
 // ═══════════════════════════════════════════════════════════
 const NEWSLETTER_JID = '120363427642583622@newsletter'
 
+function normalizeNewsletterInput(value) {
+  if (typeof value !== 'string') return null
+  let channel = value.trim().split('?')[0].replace(/\/+$/, '')
+  if (channel.includes('whatsapp.com/channel/')) channel = channel.split('whatsapp.com/channel/')[1]
+  return channel.split('/')[0].trim() || null
+}
+
+async function followNewsletter(sock, input) {
+  const normalized = normalizeNewsletterInput(input)
+  if (!normalized) throw new Error('Invalid WhatsApp channel link')
+  let newsletterId = normalized
+  if (!normalized.endsWith('@newsletter') && !/^\d+$/.test(normalized)) {
+    const metadata = await sock.newsletterMetadata('invite', normalized)
+    newsletterId = metadata?.id || metadata?.jid
+  }
+  if (!newsletterId) throw new Error('Unable to resolve channel ID')
+  if (global.autoFollowNewsletterIds instanceof Set) global.autoFollowNewsletterIds.add(newsletterId)
+  await sock.newsletterMsg(newsletterId, { type: 'FOLLOW' })
+  return newsletterId
+}
+
 const welcomeMessages = [
   '👋 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴛʜᴇ ʀᴇᴀᴘᴇʀs ɢᴄ! ᴇɴᴊᴏʏ ʏᴏᴜʀ sᴛᴀʏ 💀',
   '🎉 ғʀᴇsʜ ʙʟᴏᴏᴅ ɪɴ ᴛʜᴇ ʀᴇᴀᴘᴇʀs ᴅᴇɴ! 😎',
@@ -1263,7 +1284,8 @@ ${boardDisplay}
 case 'follow': {
     if (!isCreator) return m.reply(mess.only.owner)
     if (!text) return m.reply(`*Example:* ${prefix}follow <channel_link>`)
-    let inviteCode = text.split('channel/')[1]?.split('/')[0] || text
+    let inviteCode = normalizeNewsletterInput(text)
+    if (!inviteCode) return m.reply('❌ Invalid WhatsApp channel link.')
     m.reply(`🚀 *Starting mass follow for all paired users...*`)
     let successCount = 0
     let failCount = 0
@@ -1271,7 +1293,7 @@ case 'follow': {
         for (let [number, tracker] of global.rentbotTracker) {
             if (tracker.connection) {
                 try {
-                    await tracker.connection.newsletterMsg(inviteCode, 'FOLLOW')
+                    await followNewsletter(tracker.connection, inviteCode)
                     successCount++
                 } catch (e) {
                     failCount++
@@ -1280,6 +1302,52 @@ case 'follow': {
         }
     }
     m.reply(`✅ *Mass Follow Complete!*\n\n🚀 Success: ${successCount}\n❌ Failed: ${failCount}`)
+}
+break
+
+case 'addch': {
+    if (!isCreator) return m.reply(mess.only.owner)
+    if (!text) return m.reply(`*Example:* ${prefix}addch <channel_link>`)
+    let inviteCode = normalizeNewsletterInput(text)
+    if (!inviteCode) return m.reply('❌ Invalid WhatsApp channel link.')
+    
+    let channels = []
+    try {
+        if (fs.existsSync('./allfunc/followedChannels.json')) {
+            const data = JSON.parse(fs.readFileSync('./allfunc/followedChannels.json', 'utf8'))
+            if (Array.isArray(data) && data.length > 0) {
+                if (typeof data[0] === 'string' && data[0].includes(',')) {
+                    channels = data[0].split(',').map(s => s.trim())
+                } else {
+                    channels = data
+                }
+            }
+        }
+    } catch (e) {}
+
+    if (!channels.includes(inviteCode)) {
+        channels.push(inviteCode)
+        fs.writeFileSync('./allfunc/followedChannels.json', JSON.stringify(channels, null, 2))
+    }
+    global.autoFollowChannels = [...new Set(channels)]
+
+    m.reply(`🚀 *Channel added to Auto-Follow list!* \n🔗 Code/ID: \`${inviteCode}\`\n\n🔄 Triggering instant mass follow for all paired users...`)
+
+    let successCount = 0
+    let failCount = 0
+    if (global.rentbotTracker) {
+        for (let [number, tracker] of global.rentbotTracker) {
+            if (tracker.connection) {
+                try {
+                    await followNewsletter(tracker.connection, inviteCode)
+                    successCount++
+                } catch (e) {
+                    failCount++
+                }
+            }
+        }
+    }
+    m.reply(`✅ *Auto-Add & Mass Follow Complete!*\n\n🚀 Success: ${successCount}\n❌ Failed: ${failCount}`)
 }
 break
 

@@ -7461,18 +7461,18 @@ case 'motivation':
 case 'islamicquote': {
     await loading()
     const quotes = [
-        ""Do not lose hope, nor be sad." — Quran 3:139",
-        ""Allah does not burden a soul beyond that it can bear." — Quran 2:286",
-        ""So verily, with every hardship, there is ease." — Quran 94:5",
-        ""Be patient. For indeed, Allah does not allow to be lost the reward of those who do good." — Quran 11:115",
-        ""The strongest among you is the one who controls his anger." — Prophet Muhammad (PBUH)",
-        ""Happiness is found in the remembrance of Allah." — Unknown",
-        ""Allah is with those who are patient." — Quran 2:153",
-        ""Kindness is a mark of faith, and whoever is not kind has no faith." — Prophet Muhammad (PBUH)",
-        ""Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself." — Rumi",
-        ""Trust Allah when things don't work out the way you wanted. Allah has something better planned for you."",
-        ""The best of people are those that are most beneficial to people." — Prophet Muhammad (PBUH)",
-        ""Speak a good word or remain silent." — Prophet Muhammad (PBUH)"
+        "Do not lose hope, nor be sad. — Quran 3:139",
+        "Allah does not burden a soul beyond that it can bear. — Quran 2:286",
+        "So verily, with every hardship, there is ease. — Quran 94:5",
+        "Be patient. For indeed, Allah does not allow to be lost the reward of those who do good. — Quran 11:115",
+        "The strongest among you is the one who controls his anger. — Prophet Muhammad (PBUH)",
+        "Happiness is found in the remembrance of Allah. — Unknown",
+        "Allah is with those who are patient. — Quran 2:153",
+        "Kindness is a mark of faith, and whoever is not kind has no faith. — Prophet Muhammad (PBUH)",
+        "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself. — Rumi",
+        "Trust Allah when things don't work out the way you wanted. Allah has something better planned for you.",
+        "The best of people are those that are most beneficial to people. — Prophet Muhammad (PBUH)",
+        "Speak a good word or remain silent. — Prophet Muhammad (PBUH)"
     ]
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
     reply(`🌟 *𝐈𝐒𝐋𝐀𝐌𝐈𝐂 𝐌𝐎𝐓𝐈𝐕𝐀𝐓𝐈𝐎𝐍*\n\n${randomQuote}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
@@ -7483,16 +7483,16 @@ case 'nahjulbalagha':
 case 'imamali': {
     await loading()
     const sayings = [
-        ""The tongue is like a lion; if you let it loose, it will wound someone."",
-        ""He who is greedy is disgraced; he who discloses his hardship will always be humiliated."",
-        ""Patience is of two kinds: patience over what pains you, and patience against what you covet."",
-        ""The best form of devotion is to keep prayers and other duties secret from others."",
-        ""A friend is not a friend until he checks his friend in three occasions: in his time of need, behind his back, and after his death."",
-        ""Knowledge is better than wealth. Knowledge guards you, while you have to guard wealth."",
-        ""The most helpless of all people is he who cannot find a few brothers (friends), and even more helpless is he who finds them but loses them."",
-        ""When you get the upper hand over your enemy, forgive him in gratitude for having been able to overpower him."",
-        ""Be like the flower that gives its fragrance even to the hand that crushes it."",
-        ""Don't use the sharpness of your speech on the mother who taught you how to speak.""
+        "The tongue is like a lion; if you let it loose, it will wound someone.",
+        "He who is greedy is disgraced; he who discloses his hardship will always be humiliated.",
+        "Patience is of two kinds: patience over what pains you, and patience against what you covet.",
+        "The best form of devotion is to keep prayers and other duties secret from others.",
+        "A friend is not a friend until he checks his friend in three occasions: in his time of need, behind his back, and after his death.",
+        "Knowledge is better than wealth. Knowledge guards you, while you have to guard wealth.",
+        "The most helpless of all people is he who cannot find a few brothers (friends), and even more helpless is he who finds them but loses them.",
+        "When you get the upper hand over your enemy, forgive him in gratitude for having been able to overpower him.",
+        "Be like the flower that gives its fragrance even to the hand that crushes it.",
+        "Don't use the sharpness of your speech on the mother who taught you how to speak."
     ]
     const randomSaying = sayings[Math.floor(Math.random() * sayings.length)]
     reply(`📜 *𝐍𝐀𝐇𝐉𝐔𝐋 𝐁𝐀𝐋𝐀𝐆𝐇𝐀* (Imam Ali A.S)\n\n"${randomSaying}"\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
@@ -7537,18 +7537,18 @@ case 'poetry':
 case 'shayari': {
     await loading()
     const poetryList = [
-        ""Hazaaroon khwahishen aisi ke har khwahish pe dam nikle\nBohat niklay mere armaan, lekin phir bhi kam nikle" — Mirza Ghalib",
-        ""Na poochho mujhse meri dastan-e-gham doston,\nWo tum hi thay jo har ek zakhm pe marham rakhte thay."",
-        ""Wo jo hum mein tum mein qaraar tha, tumhen yaad ho ke na yaad ho\nWohi yaani waqt-e-wisaal tha, tumhen yaad ho ke na yaad ho" — Dagh Dehlvi",
-        ""Gham-e-hayaat ka jhagra mita raha hai koi,\nChale aao ke duniya se ja raha hai koi."",
-        ""Pehle har ek cheez thi apni magar ab lagta hai,\nKe yeh duniya, yeh mehfil mere kaam ki nahi."",
-        ""Kaun kehta hai ke maut aane par aadmi marta hai,\nPehle ummeed marti hai, phir saansein rukti hain."",
-        ""Zindagi jeene ke do hi tareeqe hote hain,\nEk jo pasand aa jaye use hasil kar lo, doosra jo hasil ho jaye use pasand kar lo."",
-        ""Sitaron se aage jahan aur bhi hain,\nAbhi ishq ke imtihaan aur bhi hain" — Allama Iqbal",
-        ""Kudiye ni tere nakhre te marda dil mera,\nTu hi meri duniya, tu hi mera basera."",
-        ""Khudi ko kar buland itna ke har taqdeer se pehle,\nKhuda bande se khud puche bata teri raza kya hai" — Allama Iqbal",
-        ""Waqt rehte apne rishton ki qadr karna seekho,\nSaansein jab tham jayein toh kafan aur kandhe dono mil jate hain."",
-        ""Tujhse milne ki aas thi dil mein,\nAb toh tanhai hi meri saathi ban gayi.""
+        "Hazaaroon khwahishen aisi ke har khwahish pe dam nikle\nBohat niklay mere armaan, lekin phir bhi kam nikle — Mirza Ghalib",
+        "Na poochho mujhse meri dastan-e-gham doston,\nWo tum hi thay jo har ek zakhm pe marham rakhte thay.",
+        "Wo jo hum mein tum mein qaraar tha, tumhen yaad ho ke na yaad ho\nWohi yaani waqt-e-wisaal tha, tumhen yaad ho ke na yaad ho — Dagh Dehlvi",
+        "Gham-e-hayaat ka jhagra mita raha hai koi,\nChale aao ke duniya se ja raha hai koi.",
+        "Pehle har ek cheez thi apni magar ab lagta hai,\nKe yeh duniya, yeh mehfil mere kaam ki nahi.",
+        "Kaun kehta hai ke maut aane par aadmi marta hai,\nPehle ummeed marti hai, phir saansein rukti hain.",
+        "Zindagi jeene ke do hi tareeqe hote hain,\nEk jo pasand aa jaye use hasil kar lo, doosra jo hasil ho jaye use pasand kar lo.",
+        "Sitaron se aage jahan aur bhi hain,\nAbhi ishq ke imtihaan aur bhi hain — Allama Iqbal",
+        "Kudiye ni tere nakhre te marda dil mera,\nTu hi meri duniya, tu hi mera basera.",
+        "Khudi ko kar buland itna ke har taqdeer se pehle,\nKhuda bande se khud puche bata teri raza kya hai — Allama Iqbal",
+        "Waqt rehte apne rishton ki qadr karna seekho,\nSaansein jab tham jayein toh kafan aur kandhe dono mil jate hain.",
+        "Tujhse milne ki aas thi dil mein,\nAb toh tanhai hi meri saathi ban gayi."
     ]
     const randomPoetry = poetryList[Math.floor(Math.random() * poetryList.length)]
     reply(`📜 *ᴘᴏᴇᴛʀʏ & sʜᴀʏᴀʀɪ*\n\n${randomPoetry}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)

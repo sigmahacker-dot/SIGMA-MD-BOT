@@ -6570,52 +6570,45 @@ case 'song': {
 ┗━━━━━━━━━━━━━━━━━━━━━┛`
     }, { quoted: m })
 
-    // 3️⃣ Get audio URL from reliable API fallback
-    let downloadUrl = null
+    // 3️⃣ Get audio buffer or download URL from robust multi-API fallbacks
+    let audioBuffer = null
+    
+    // API 1: Delirius API
     try {
-      const apiUrl = `https://omegatech-api.dixonomega.tech/api/downloader/ytmp3?url=${encodeURIComponent(video.url)}`
-      const res = await axios.get(apiUrl, { timeout: 15000 })
-      if (res.data && res.data.success && res.data.result?.downloadUrl) {
-        downloadUrl = res.data.result.downloadUrl
+      const res = await axios.get(`https://delirius-api-oficial.vercel.app/download/ytmp3?url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
+      if (res.data && res.data.status && res.data.data?.download?.url) {
+        const dlRes = await axios.get(res.data.data.download.url, { responseType: 'arraybuffer', timeout: 60000 })
+        audioBuffer = Buffer.from(dlRes.data)
       }
-    } catch (err) {}
+    } catch (e) {}
 
-    if (!downloadUrl) {
+    // API 2: VQR / Apidog / Nexoracle Fallback
+    if (!audioBuffer) {
       try {
-        const apiUrl2 = `https://api.nexoracle.com/downloader/yt-mp3?apikey=free_key@maher_apis&url=${encodeURIComponent(video.url)}`
-        const res2 = await axios.get(apiUrl2, { timeout: 15000 })
-        if (res2.data && res2.data.result?.url) {
-          downloadUrl = res2.data.result.url
+        const res = await axios.get(`https://api.nexoracle.com/downloader/yt-mp3?apikey=free_key@maher_apis&url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
+        if (res.data && res.data.result?.url) {
+          const dlRes = await axios.get(res.data.result.url, { responseType: 'arraybuffer', timeout: 60000 })
+          audioBuffer = Buffer.from(dlRes.data)
         }
-      } catch (err) {}
+      } catch (e) {}
     }
 
-    if (!downloadUrl) {
-      throw new Error('All YouTube MP3 APIs failed to return download URL')
+    // API 3: Dllia / SaveFrom / YTDL Public API
+    if (!audioBuffer) {
+      try {
+        const res = await axios.get(`https://apis.davidcyriltech.my.id/youtube/mp3?url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
+        if (res.data && res.data.status === 200 && res.data.result?.downloadUrl) {
+          const dlRes = await axios.get(res.data.result.downloadUrl, { responseType: 'arraybuffer', timeout: 60000 })
+          audioBuffer = Buffer.from(dlRes.data)
+        }
+      } catch (e) {}
     }
 
-    // 4️⃣ Download M4A to temp file
-    const tempDir = path.join('/tmp', `yt-${Date.now()}`)
-    fs.mkdirSync(tempDir, { recursive: true })
-    const m4aFile = path.join(tempDir, 'input.m4a')
-    const mp3File = path.join(tempDir, 'output.mp3')
-
-    const audioRes = await axios.get(downloadUrl, {
-      responseType: 'arraybuffer',
-      timeout: 120000,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    })
-
-    fs.writeFileSync(m4aFile, Buffer.from(audioRes.data))
-
-    // 5️⃣ Convert M4A → MP3 using ffmpeg
-    await execPromise(`ffmpeg -i "${m4aFile}" -vn -ar 44100 -ac 2 -b:a 128k -y "${mp3File}"`, { timeout: 60000 })
-
-    if (!fs.existsSync(mp3File) || fs.statSync(mp3File).size === 0) {
-      throw new Error('FFmpeg conversion failed')
+    if (!audioBuffer || audioBuffer.length < 1000) {
+      throw new Error('All YouTube download APIs failed or returned empty audio.')
     }
 
-    const buffer = fs.readFileSync(mp3File)
+    const buffer = audioBuffer
 
     // 6️⃣ Send as proper MP3
     await bad.sendMessage(
@@ -6636,7 +6629,7 @@ case 'song': {
   } catch (e) {
     console.error('[PLAY] ERROR:', e)
     await bad.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-    reply('⚠️ Error while processing the request')
+    reply(`⚠️ Error: ${e.message}`)
   }
 }
 break

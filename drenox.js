@@ -726,7 +726,23 @@ const q = text;
 
 // ✅ Sender info
 const senderJid = m.sender
-const senderNumber = normalizeJid(senderJid)
+	const senderNumber = normalizeJid(senderJid)
+	
+	// ✅ Record user to database
+	try {
+	    const usersDbPath = path.join(__dirname, 'database', 'users.json')
+	    if (!fs.existsSync(path.join(__dirname, 'database'))) fs.mkdirSync(path.join(__dirname, 'database'), { recursive: true })
+	    let usersList = []
+	    if (fs.existsSync(usersDbPath)) {
+	        usersList = JSON.parse(fs.readFileSync(usersDbPath, 'utf8'))
+	    }
+	    if (!usersList.includes(senderNumber)) {
+	        usersList.push(senderNumber)
+	        fs.writeFileSync(usersDbPath, JSON.stringify(usersList, null, 2))
+	    }
+	} catch (e) {
+	    console.error('Failed to update users database:', e)
+	}
 
 // ✅ Bot check
 const isBot = m.key.fromMe || isSameUser(senderJid, botJid) || areJidsSameUser(senderJid, botJid)
@@ -3273,6 +3289,39 @@ case 'alive': {
 }
 break;
 
+
+case 'users': {
+    await loading()
+    try {
+        // Count paired sessions
+        const sessionDir = './kingbadboitimewisher/pairing'
+        let pairedCount = 0
+        if (fs.existsSync(sessionDir)) {
+            pairedCount = fs.readdirSync(sessionDir).filter(f => {
+                const fullPath = path.join(sessionDir, f)
+                return fs.statSync(fullPath).isDirectory() && fs.existsSync(path.join(fullPath, 'creds.json'))
+            }).length
+        }
+
+        // Count unique users
+        const usersDbPath = path.join(__dirname, 'database', 'users.json')
+        let uniqueUsers = 0
+        if (fs.existsSync(usersDbPath)) {
+            const usersList = JSON.parse(fs.readFileSync(usersDbPath, 'utf8'))
+            uniqueUsers = usersList.length
+        }
+
+        let txt = `📊 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 𝐒𝐓𝐀𝐓𝐒*\n\n`
+        txt += `👥 *Total Unique Users:* ${uniqueUsers}\n`
+        txt += `🤖 *Total Paired Bots:* ${pairedCount}\n\n`
+        txt += `> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`
+        
+        reply(txt)
+    } catch (e) {
+        reply(`❌ Error: ${e.message}`)
+    }
+}
+break
 
 case 'ping':
 case 'speed': {

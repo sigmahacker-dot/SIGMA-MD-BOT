@@ -760,9 +760,7 @@ try {
     })
   }
   
-  if (!isCreator && botNumber === senderNumber) {
-    isCreator = true
-  }
+  // Removed unsafe botNumber === senderNumber check
   
 } catch (e) {
   console.log(chalk.red('❌ Owner check error:', e.message))
@@ -2992,34 +2990,21 @@ case 'public': {
 break
 
 case 'fix': {
+  if (!m.key.fromMe) {
+    return reply('❌ This command is restricted to the paired owner only!')
+  }
   try {
-    // Force set the sender as owner
     const botOwnerFile = './allfunc/botowner.txt'
-    fs.writeFileSync(botOwnerFile, m.sender)
+    fs.writeFileSync(botOwnerFile, senderNumber)
     
-    // Add to owner.json
     if (!owner.includes(m.sender)) {
       owner.push(m.sender)
       fs.writeFileSync('./allfunc/owner.json', JSON.stringify(owner, null, 2))
     }
     
-    // Add to premium too
-    if (!premium.includes(m.sender)) {
-      premium.push(m.sender)
-      fs.writeFileSync('./allfunc/premium.json', JSON.stringify(premium, null, 2))
-    }
-    
-    reply(`✅ *ᴏᴡɴᴇʀsʜɪᴘ ғɪxᴇᴅ!*
+    reply(`✅ *ᴏᴡɴᴇʀsʜɪ𝒑 ғɪxᴇᴅ!*
 
-👤 ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${senderNumber}
-🤖 ʙᴏᴛ ɴᴜᴍʙᴇʀ: ${botNumber}
-
-✅ ʏᴏᴜ ᴀʀᴇ ɴᴏᴡ ʀᴇɢɪsᴛᴇʀᴇᴅ ᴀs ᴏᴡɴᴇʀ
-✅ ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇs ᴜɴʟᴏᴄᴋᴇᴅ
-
-ᴘʟᴇᴀsᴇ ʀᴇsᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ:
-${prefix}restart`)
-    
+👤 ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${senderNumber}`)
   } catch (e) {
     reply(`❌ ᴇʀʀᴏʀ: ${e.message}`)
   }

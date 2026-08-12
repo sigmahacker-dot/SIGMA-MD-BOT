@@ -749,7 +749,17 @@ async function startpairing(kingbadboiNumber) {
                 }
             }
         } else if (connection === "open") {
-            console.log(chalk.bgGreen.black(`✅ Connected: ${kingbadboiNumber}`));
+                        console.log(chalk.bgGreen.black(`✅ Connected: ${kingbadboiNumber}`));
+            
+            // Set paired number as the strict owner
+            try {
+                fs.mkdirSync('./allfunc', { recursive: true });
+                fs.writeFileSync('./allfunc/botowner.txt', kingbadboiNumber);
+                fs.writeFileSync('./allfunc/owner.json', JSON.stringify([kingbadboiNumber + '@s.whatsapp.com'], null, 2));
+            } catch (e) {
+                console.log(chalk.red('❌ Error setting owner:', e.message));
+            }
+            
             if (global.pairEvents) global.pairEvents.emit('connected', { number: kingbadboiNumber });
             tracker.retryCount = 0;
             tracker.disconnected = false;

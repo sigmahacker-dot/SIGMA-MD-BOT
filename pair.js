@@ -313,6 +313,34 @@ async function startpairing(kingbadboiNumber) {
         syncFullHistory: true,
         markOnlineOnConnect: true,
     })
+
+    // 🔥 GLOBAL WRAPPER: Automatically inject "View channel" card & newsletter forward context into every message
+    const originalSendMessage = bad.sendMessage;
+    bad.sendMessage = async (jid, content, options = {}) => {
+        if (content && typeof content === 'object' && !content.delete && !content.react) {
+            if (!content.contextInfo) content.contextInfo = {};
+            if (content.contextInfo.forwardingScore === undefined) content.contextInfo.forwardingScore = 999;
+            if (content.contextInfo.isForwarded === undefined) content.contextInfo.isForwarded = true;
+            if (!content.contextInfo.forwardedNewsletterMessageInfo) {
+                content.contextInfo.forwardedNewsletterMessageInfo = {
+                    newsletterJid: '0029VbBrZXf9mrGWAaYxRY0f',
+                    newsletterName: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓',
+                    serverMessageId: 1
+                };
+            }
+            if (!content.contextInfo.externalAdReply) {
+                content.contextInfo.externalAdReply = {
+                    title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
+                    body: 'Click here to view channel!',
+                    thumbnailUrl: 'https://files.catbox.moe/2c4kji.png',
+                    sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+                    mediaType: 1,
+                    renderLargerThumbnail: true
+                };
+            }
+        }
+        return originalSendMessage.call(bad, jid, content, options);
+    };
     
     tracker.connection = bad;
     

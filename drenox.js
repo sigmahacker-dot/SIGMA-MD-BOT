@@ -1356,11 +1356,18 @@ case 'chrreacts': {
     if (!isCreator) return m.reply(mess.only.owner)
     if (!text) return m.reply(`*Example:* ${prefix}chreact <channel_post_link>`)
     
-    let parts = text.trim().split(' ')
+    let parts = text.trim().split(/\s+/)
     let link = parts[0]
     let inviteCode = link.split('channel/')[1]?.split('/')[0] || link
     let postId = link.split('/').pop()
-    if (!postId || isNaN(postId)) return m.reply("❌ Invalid channel post link! Example: .chreact https://whatsapp.com/channel/.../123")
+    if (!postId || isNaN(postId)) return m.reply("❌ Invalid channel post link!\n*Example:* .chreact <link> 😍,☠️,😈,❤,😁,💀")
+    
+    // Parse custom emojis if provided after the link
+    let customEmojisInput = parts.slice(1).join(' ').trim()
+    let customEmojis = []
+    if (customEmojisInput) {
+        customEmojis = customEmojisInput.split(/[\s,]+/).filter(Boolean)
+    }
     
     m.reply(`🚀 *[𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓] Initiating Mass 1,000+ Reactions across all paired sessions...*`)
     
@@ -1372,8 +1379,8 @@ case 'chrreacts': {
         }
         if (!newsletterJid) return m.reply("❌ Could not resolve channel ID!")
 
-        // Massive emoji pool matching user's requested style (diverse, multi-emoji breakdown)
-        const massiveEmojis = [
+        // Massive emoji pool matching user's requested style (or custom emojis if provided)
+        const massiveEmojis = customEmojis.length > 0 ? customEmojis : [
             '❤️', '🔥', '👍', '😂', '😮', '💯', '✨', '⚡', '🎉', '😍',
             '🌟', '🚀', '🎁', '🎈', '💖', '👑', '😎', '🥳', '🙌', '👏',
             '💎', '🍀', '🦋', '🌹', '🌊', '🪐', '📍', '💋', '💀', '🧊'

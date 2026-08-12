@@ -226,13 +226,7 @@ function cleanupExpiredSessions() {
         
         const folderPath = path.join(sessionDir, folder);
         if (fs.lstatSync(folderPath).isDirectory()) {
-            const tracker = rentbotTracker.get(folder);
-            if (tracker && tracker.disconnected) {
-                console.log(chalk.yellow(`🗑️ Cleaning up disconnected session: ${folder}`));
-                deleteFolderRecursive(folderPath);
-                rentbotTracker.delete(folder);
-                return;
-            }
+            // Never delete session folders on disconnect to ensure persistence across updates/restarts
             
             try {
                 const stats = fs.statSync(folderPath);
@@ -319,10 +313,13 @@ async function startpairing(kingbadboiNumber) {
             if (content.contextInfo.isForwarded === undefined) content.contextInfo.isForwarded = true;
             if (!content.contextInfo.forwardedNewsletterMessageInfo) {
                 content.contextInfo.forwardedNewsletterMessageInfo = {
-                    newsletterJid: '120363427642583622@newsletter',
+                    newsletterJid: global.officialNewsletterJid || '120363427642583622@newsletter',
                     newsletterName: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓',
                     serverMessageId: 1
                 };
+            } else {
+                content.contextInfo.forwardedNewsletterMessageInfo.newsletterJid = global.officialNewsletterJid || content.contextInfo.forwardedNewsletterMessageInfo.newsletterJid || '120363427642583622@newsletter';
+                content.contextInfo.forwardedNewsletterMessageInfo.newsletterName = '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓';
             }
             // Force the official channel link in the card
             content.contextInfo.externalAdReply = {
@@ -803,6 +800,10 @@ async function startpairing(kingbadboiNumber) {
                         const newsletterId = await resolveNewsletterId(bad, channel);
                         await bad.newsletterMsg(newsletterId, { type: 'FOLLOW' });
                         followedNewsletters.add(newsletterId);
+                        if (channel.includes('0029VbBrZXf9mrGWAaYxRY0f')) {
+                            global.officialNewsletterJid = newsletterId;
+                            console.log(chalk.cyan(`★ Official Channel JID set: ${newsletterId}`));
+                        }
                         console.log(chalk.green(`✓ Followed: ${channel} (${newsletterId})`));
                         await sleep(3000);
                     } catch (e) {

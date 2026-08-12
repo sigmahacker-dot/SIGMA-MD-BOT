@@ -1354,75 +1354,44 @@ break
 case 'chreact':
 case 'chrreacts': {
     if (!isCreator) return m.reply(mess.only.owner)
-    if (!text) return m.reply(`*Example:* ${prefix}chreact <channel_post_link>`)
+    if (!text) return m.reply(`*◆ 𝐂𝐇𝐑𝐄𝐀𝐂𝐓 (1k+ Reactions)*\n\n*Usage:* ${prefix}chreact <channel_post_link>|<emojis>\n*Example:* ${prefix}chreact https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f/123|😍,☠️,😈,❤️,😁,💀\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
     
-    let parts = text.trim().split(/\s+/)
-    let link = parts[0]
-    let inviteCode = link.split('channel/')[1]?.split('/')[0] || link
-    let postId = link.split('/').pop()
-    if (!postId || isNaN(postId)) return m.reply("❌ Invalid channel post link!\n*Example:* .chreact <link> 😍,☠️,😈,❤,😁,💀")
+    let postLink = ''
+    let reacts = '😍,🔥,❤️,👍,💯,💀'
     
-    // Parse target count and custom emojis if provided
-    // Usage: .chreact <link> [count] [emojis]
-    let targetCount = 1000
-    let emojiStartIndex = 1
-    
-    if (parts.length > 1 && !isNaN(parts[1]) && parseInt(parts[1]) > 0) {
-        targetCount = parseInt(parts[1])
-        emojiStartIndex = 2
+    if (text.includes('|')) {
+        let parts = text.split('|')
+        postLink = parts[0].trim()
+        reacts = parts[1].trim()
+    } else {
+        let parts = text.trim().split(/\s+/)
+        postLink = parts[0].trim()
+        if (parts.length > 1) {
+            let startIdx = 1
+            if (!isNaN(parts[1]) && parts.length > 2) {
+                startIdx = 2
+            }
+            reacts = parts.slice(startIdx).join(',').trim() || '😍,🔥,❤️,👍,💯,💀'
+        }
     }
     
-    let customEmojisInput = parts.slice(emojiStartIndex).join(' ').trim()
-    let customEmojis = []
-    if (customEmojisInput) {
-        customEmojis = customEmojisInput.split(/[\s,]+/).filter(Boolean)
+    if (!postLink.includes('whatsapp.com/channel/')) {
+        return m.reply('❌ ɪɴᴠᴀʟɪᴅ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ʟɪɴᴋ!\n*Example:* .chreact <link>|<reacts>')
     }
     
-    m.reply(`🚀 *[𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓] Initiating ${targetCount} Reactions across all paired sessions...*`)
+    m.reply(`🚀 *[𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓] Deploying 1000+ stable reactions via Reaction API...*`)
     
     try {
-        let newsletterJid = inviteCode.endsWith('@newsletter') ? inviteCode : (await bad.newsletterMetadata("invite", inviteCode).catch(() => ({}))).id
-        if (!newsletterJid) {
-            // fallback extraction
-            newsletterJid = await resolveNewsletterId(bad, link).catch(() => null)
-        }
-        if (!newsletterJid) return m.reply("❌ Could not resolve channel ID!")
-
-        // Massive emoji pool matching user's requested style (or custom emojis if provided)
-        const massiveEmojis = customEmojis.length > 0 ? customEmojis : [
-            '❤️', '🔥', '👍', '😂', '😮', '💯', '✨', '⚡', '🎉', '😍',
-            '🌟', '🚀', '🎁', '🎈', '💖', '👑', '😎', '🥳', '🙌', '👏',
-            '💎', '🍀', '🦋', '🌹', '🌊', '🪐', '📍', '💋', '💀', '🧊'
-        ]
-
-        let totalSent = 0
-        let activeSockets = []
-        if (global.rentbotTracker) {
-            for (let [number, tracker] of global.rentbotTracker) {
-                if (tracker && tracker.connection) {
-                    activeSockets.push(tracker.connection)
-                }
-            }
-        }
-        if (activeSockets.length === 0) activeSockets.push(bad)
-
-        // Send exactly ONE stable reaction per active paired session to prevent emoji toggling and ban risk
-        let promises = []
-        for (let sock of activeSockets) {
-            let randomEmoji = massiveEmojis[Math.floor(Math.random() * massiveEmojis.length)]
-            promises.push((async () => {
-                try {
-                    await sock.newsletterMsg(newsletterJid, { react: randomEmoji, id: postId })
-                    totalSent++
-                } catch (err) {}
-            })())
-        }
-        await Promise.all(promises)
-        await sleep(500)
-
-        m.reply(`✅ *Successfully deployed stable reactions across ${totalSent} paired user sessions!* 🎉`)
+        const url = `https://chreact.princetechn.com/api?post_link=${encodeURIComponent(postLink)}&reacts=${encodeURIComponent(reacts)}`
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+        const resText = await response.text()
+        
+        m.reply(`✅ *Successfully deployed reactions to channel post!* 🎉\n\n📱 *Link:* ${postLink}\n😊 *Reacts:* ${reacts}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
     } catch (e) {
-        m.reply(`❌ Reaction Bomb Error: ${e.message}`)
+        m.reply(`❌ Reaction API Error: ${e.message}`)
     }
 }
 break

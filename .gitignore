@@ -1,0 +1,9 @@
+node_modules
+.env
+kingbadboitimewisher/pairing/*
+!kingbadboitimewisher/pairing/creds.json
+tmp
+sticker
+database
+.DS_Store
+package-lock.json

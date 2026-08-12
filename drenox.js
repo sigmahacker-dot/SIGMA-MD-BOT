@@ -7612,7 +7612,7 @@ case 'soraai': {
       // Send the video
       await bad.sendMessage(m.chat, {
         video: { url: data.result },
-        caption: `*◆ sᴏʀᴀ ᴀɪ ᴠɪᴅᴇᴏ ɢᴇɴᴇʀᴀᴛᴏʀ*\n\n📝 ᴘʀᴏᴍᴘᴛ: ${prompt}\n📐 ᴀsᴘᴇᴄᴛ: ${aspect}\n🤖 ᴍᴏᴅᴇʟ: Sora AI\n\n---\n*ᴄʀᴇᴅɪᴛ:* @Omegatech-01\n*ғᴏʟʟᴏᴡ:* https://whatsapp.com/channel/0029Vaf5pIEHFxOsA3Sr4r3o\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧`,
+        caption: `*◆ sᴏʀᴀ ᴀɪ ᴠɪᴅᴇᴏ ɢᴇɴᴇʀᴀᴛᴏʀ*\n\n📝 ᴘʀᴏᴍᴘᴛ: ${prompt}\n📐 ᴀsᴘᴇᴄᴛ: ${aspect}\n🤖 ᴍᴏᴅᴇʟ: Sora AI\n\n---\n*ᴄʀᴇᴅɪᴛ:* @Omegatech-01\n*ғᴏʟʟᴏᴡ:* https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧`,
         gifPlayback: false
       }, { quoted: m })
       
@@ -7705,7 +7705,7 @@ case 'sorav2': {
     // === STEP 3: SEND VIDEO ===
     await bad.sendMessage(m.chat, {
       video: { url: videoUrl },
-      caption: `*◆ sᴏʀᴀ ᴀɪ ᴠɪᴅᴇᴏ ɢᴇɴᴇʀᴀᴛᴇᴅ!*\n\n📝 ᴘʀᴏᴍᴘᴛ: ${prompt}\n📐 ʀᴀᴛɪᴏ: ${aspect}\n🆔 ɪᴅ: \`${videoId}\`\n\n---\n*ᴄʀᴇᴅɪᴛ:* @Omegatech-01\n*ғᴏʟʟᴏᴡ:* https://whatsapp.com/channel/0029Vaf5pIEHFxOsA3Sr4r3o\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧`,
+      caption: `*◆ sᴏʀᴀ ᴀɪ ᴠɪᴅᴇᴏ ɢᴇɴᴇʀᴀᴛᴇᴅ!*\n\n📝 ᴘʀᴏᴍᴘᴛ: ${prompt}\n📐 ʀᴀᴛɪᴏ: ${aspect}\n🆔 ɪᴅ: \`${videoId}\`\n\n---\n*ᴄʀᴇᴅɪᴛ:* @Omegatech-01\n*ғᴏʟʟᴏᴡ:* https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧`,
       gifPlayback: false
     }, { quoted: m })
     
@@ -9574,7 +9574,7 @@ case 'freact': {
 ᴜsᴀɢᴇ: ${prefix + command} <ᴄʜᴀɴɴᴇʟ-ʟɪɴᴋ>|<ᴇᴍᴏᴊɪ>
 
 ᴇxᴀᴍᴘʟᴇ:
-${prefix + command} and https://whatsapp.com/channel/0029Vaf5pIEHFxOsA3Sr4r3o/123|😂😍🔥
+${prefix + command} and https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f/123|😂😍🔥
 
 ɴᴏᴛᴇ: ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ᴍᴜʟᴛɪᴘʟᴇ ᴇᴍᴏᴊɪs!`)
   }

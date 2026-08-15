@@ -2007,16 +2007,7 @@ case 'menu2': {
 
   await bad.sendMessage(from, {
     image: { url: randomImage },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 
   if (menuAudio) {
@@ -2078,24 +2069,7 @@ https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f
 
   await bad.sendMessage(from, {
     image: { url: randomImage },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      },
-      externalAdReply: {
-        title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
-        body: 'Click here to open WhatsApp Channel!',
-        thumbnailUrl: randomImage,
-        sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 
   if (menuAudio) {
@@ -2154,16 +2128,7 @@ case 'bug': {
 
   await bad.sendMessage(from, {
     image: { url: randomImage },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 
   if (menuAudio) {
@@ -2216,16 +2181,7 @@ case 'mymenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2284,16 +2240,7 @@ case 'groupmenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2331,16 +2278,7 @@ case 'downloadmenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2401,16 +2339,7 @@ case 'funmenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2438,16 +2367,7 @@ case 'gamemenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2521,16 +2441,7 @@ case 'animemenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2563,16 +2474,7 @@ case 'stickermenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2652,16 +2554,7 @@ case 'utilitymenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2685,16 +2578,7 @@ case 'voicemenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2766,16 +2650,7 @@ case 'imagemenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2799,16 +2674,7 @@ case 'emojimenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2884,16 +2750,7 @@ case 'logomenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2926,16 +2783,7 @@ case 'aimenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break
@@ -2967,16 +2815,7 @@ case 'miscmenu': {
 
   await bad.sendMessage(m.chat, {
     image: { url: 'https://files.catbox.moe/2c4kji.png' },
-    caption: menuText,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: NEWSLETTER_JID,
-        newsletterName: "𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓",
-        serverMessageId: 1
-      }
-    }
+    caption: menuText
   }, { quoted: m })
 }
 break

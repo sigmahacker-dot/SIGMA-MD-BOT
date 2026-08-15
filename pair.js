@@ -304,25 +304,7 @@ async function startpairing(kingbadboiNumber) {
         markOnlineOnConnect: true,
     })
 
-    // 🔥 GLOBAL WRAPPER: Clean and robust message delivery without blocking visibility
-    const originalSendMessage = bad.sendMessage;
-    bad.sendMessage = async (jid, content, options = {}) => {
-        if (content && typeof content === 'object' && !content.delete && !content.react) {
-            if (!content.contextInfo) content.contextInfo = {};
-            // Only add externalAdReply for text/media responses if not already present, ensuring 100% visibility
-            if (!content.contextInfo.externalAdReply && (content.text || content.caption)) {
-                content.contextInfo.externalAdReply = {
-                    title: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 — View Official Channel',
-                    body: 'Click here to open WhatsApp Channel!',
-                    thumbnailUrl: 'https://files.catbox.moe/2c4kji.png',
-                    sourceUrl: 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f',
-                    mediaType: 1,
-                    renderLargerThumbnail: true
-                };
-            }
-        }
-        return originalSendMessage.call(bad, jid, content, options);
-    };
+
     
     tracker.connection = bad;
     

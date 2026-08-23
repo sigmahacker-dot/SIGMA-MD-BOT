@@ -13658,38 +13658,32 @@ module.exports = async function handleMessage(bad, mek, chatUpdate, store) {
             if (fromMe) continue
             
 // ==================== EXTRACT MESSAGE BODY ====================
-// group only
-if (!chatId.endsWith('@g.us')) return
+// Extract before chat-specific logic; the old order referenced chatId before declaration.
+if (msg.key.fromMe) continue
 
-// ignore bot messages
-if (msg.key.fromMe) return
-
-// body extract
 const messageTypes = msg.message
-
 const chatId = msg.key.remoteJid
 let body = messageTypes?.conversation || 
            messageTypes?.extendedTextMessage?.text || 
-           messageTypes?.imageMessage?.caption || 
            messageTypes?.videoMessage?.caption || 
+           messageTypes?.imageMessage?.caption || 
            messageTypes?.audioMessage?.caption ||
            messageTypes?.documentMessage?.caption ||
            ''
 
-// bot admin check
-const metadata = await bad.groupMetadata(chatId)
-const botId = bad.user.id.split(':')[0] + '@s.whatsapp.net'
-const isBotAdmin = metadata.participants.find(p => p.id === botId)?.admin
-if (!isBotAdmin) return
-
-// antilink setting
-const antilink = getSetting(chatId, "antilink") || "delete"
-
-// link detection
-if (antilink && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
-  if (antilink === "delete") {
-    await bad.sendMessage(chatId, { delete: msg.key })
-  }
+// Group moderation must not block DMs or the general command router.
+if (chatId.endsWith('@g.us')) {
+    try {
+        const metadata = await bad.groupMetadata(chatId)
+        const botId = bad.user.id.split(':')[0] + '@s.whatsapp.net'
+        const isBotAdmin = metadata.participants.find(p => p.id === botId)?.admin
+        const antilink = getSetting(chatId, "antilink") || "delete"
+        if (isBotAdmin && antilink === "delete" && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
+            await bad.sendMessage(chatId, { delete: msg.key })
+        }
+    } catch (moderationError) {
+        console.error('❌ Group moderation error:', moderationError.message)
+    }
 }
             
             // ==================== AUTO PRESENCE ====================
@@ -13768,9 +13762,9 @@ if (antilink && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
                 continue
             }
             
-            // ==================== CHATBOT (GROUPS) ====================
-            if (!global.chatbot || !global.chatbot.has(from)) continue
-            
+                        // ==================== CHATBOT (GROUPS) ====================
+            // Chatbot is optional; it must not short-circuit normal commands.
+            if (global.chatbot && global.chatbot.has(from)) {
             console.log(`🤖 Chatbot enabled in group: ${from}`)
             
             const botNumber = bad.user.id.split(':')[0] + '@s.whatsapp.net'
@@ -13854,6 +13848,7 @@ if (antilink && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
             }
             
             await bad.sendPresenceUpdate('paused', from)
+            }
             
         } catch (err) {
             console.error('❌ Message handler error:', err.message)

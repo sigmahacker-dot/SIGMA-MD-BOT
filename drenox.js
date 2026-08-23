@@ -728,22 +728,22 @@ const q = text;
 const senderJid = m.sender
 	const senderNumber = normalizeJid(senderJid)
 	
-	// ✅ Record user to database
+	// ✅ Record deduplicated lifetime and recent activity data
 	try {
-	    const usersDbPath = path.join(__dirname, 'database', 'users.json')
-	    if (!fs.existsSync(path.join(__dirname, 'database'))) fs.mkdirSync(path.join(__dirname, 'database'), { recursive: true })
-	    let usersList = []
-	    if (fs.existsSync(usersDbPath)) {
-	        usersList = JSON.parse(fs.readFileSync(usersDbPath, 'utf8'))
-	    }
-	    if (!usersList.includes(senderNumber)) {
-	        usersList.push(senderNumber)
-	        fs.writeFileSync(usersDbPath, JSON.stringify(usersList, null, 2))
-	    }
+	    const databaseDir = path.join(__dirname, 'database')
+	    if (!fs.existsSync(databaseDir)) fs.mkdirSync(databaseDir, { recursive: true })
+	    const usersDbPath = path.join(databaseDir, 'users.json')
+	    const activityPath = path.join(databaseDir, 'active_users.json')
+	    let usersList = fs.existsSync(usersDbPath) ? JSON.parse(fs.readFileSync(usersDbPath, 'utf8')) : []
+	    usersList = [...new Set(usersList.map(String).filter(Boolean))]
+	    if (!usersList.includes(String(senderNumber))) usersList.push(String(senderNumber))
+	    fs.writeFileSync(usersDbPath, JSON.stringify(usersList, null, 2))
+	    const activity = fs.existsSync(activityPath) ? JSON.parse(fs.readFileSync(activityPath, 'utf8')) : {}
+	    activity[String(senderNumber)] = Date.now()
+	    fs.writeFileSync(activityPath, JSON.stringify(activity, null, 2))
 	} catch (e) {
 	    console.error('Failed to update users database:', e)
 	}
-
 // ✅ Bot check
 const isBot = m.key.fromMe || isSameUser(senderJid, botJid) || areJidsSameUser(senderJid, botJid)
 
@@ -844,16 +844,16 @@ if (global.autobio) {
   bad.updateProfileStatus(`𓆩 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧 𓆪 | ᴜᴘᴛɪᴍᴇ: ${runtime(process.uptime())}`).catch(_ => _)
 }
     
+    const OFFICIAL_CHANNEL_LINK = 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f'
     const reply = async (teks) => {
+  const bodyText = String(teks ?? '')
+  const decorated = bodyText.includes(OFFICIAL_CHANNEL_LINK)
+    ? bodyText
+    : `${bodyText}\n\n╭─〔 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 〕─╮\n│ View Channel: ${OFFICIAL_CHANNEL_LINK}\n╰────────────────────╯`
   try {
-    await bad.sendMessage(from, {
-      text: teks,
-      mentions: [sender]
-    });
+    await bad.sendMessage(from, { text: decorated, mentions: [sender] })
   } catch (error) {
-    await bad.sendMessage(from, {
-      text: teks
-    });
+    await bad.sendMessage(from, { text: decorated })
   }
 };
 

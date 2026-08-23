@@ -15,6 +15,50 @@ const startpairing = require('./pair');
 
 const PORT = process.env.PORT || 8080;
 const PAIRING_DIR = './kingbadboitimewisher/pairing/';
+const VISITOR_DB = path.join(__dirname, 'database', 'dashboard_visitors.json');
+const visitorSessions = new Map();
+const visitorData = new Map();
+
+function loadVisitorData() {
+    try {
+        if (!fs.existsSync(path.dirname(VISITOR_DB))) fs.mkdirSync(path.dirname(VISITOR_DB), { recursive: true });
+        if (fs.existsSync(VISITOR_DB)) {
+            const parsed = JSON.parse(fs.readFileSync(VISITOR_DB, 'utf8'));
+            Object.entries(parsed).forEach(([id, value]) => visitorData.set(id, value));
+        }
+    } catch (error) {
+        console.log(chalk.yellow('⚠️ Visitor database unavailable:', error.message));
+    }
+}
+
+function saveVisitorData() {
+    try {
+        fs.writeFileSync(VISITOR_DB, JSON.stringify(Object.fromEntries(visitorData), null, 2));
+    } catch (error) {
+        console.log(chalk.yellow('⚠️ Visitor database save failed:', error.message));
+    }
+}
+
+function getPairedCount() {
+    if (!fs.existsSync(PAIRING_DIR)) return 0;
+    return fs.readdirSync(PAIRING_DIR, { withFileTypes: true })
+        .filter(entry => entry.isDirectory() && entry.name.endsWith('@s.whatsapp.net'))
+        .filter(entry => fs.existsSync(path.join(PAIRING_DIR, entry.name, 'creds.json'))).length;
+}
+
+function emitStats() {
+    const cutoff = Date.now() - 120000;
+    const activeVisitors = [...visitorData.values()].filter(item => Number(item.lastSeen) >= cutoff).length;
+    io.emit('stats', {
+        activeSockets: io.sockets.sockets.size,
+        activeVisitors,
+        totalVisitors: visitorData.size,
+        pairedUsers: getPairedCount(),
+        serverTime: Date.now()
+    });
+}
+
+loadVisitorData();
 
 // Serve static files
 app.use(express.static(path.join(__dirname)));
@@ -26,9 +70,32 @@ app.get('/', (req, res) => {
 // Socket.io Handlers
 io.on('connection', (socket) => {
     console.log(chalk.blue('🌐 New web client connected'));
+    const fallbackVisitorId = `socket_${socket.id}`;
+    const touchVisitor = (visitorId) => {
+        const id = String(visitorId || fallbackVisitorId).slice(0, 120);
+        visitorSessions.set(socket.id, id);
+        visitorData.set(id, { lastSeen: Date.now() });
+        if (visitorData.size % 5 === 0) saveVisitorData();
+        emitStats();
+    };
+    touchVisitor(fallbackVisitorId);
+
+    socket.on('set-user', (data) => {
+        const visitorId = typeof data === 'string' ? data : data?.userId;
+        touchVisitor(visitorId || fallbackVisitorId);
+    });
+
+    socket.on('heartbeat', () => {
+        touchVisitor(visitorSessions.get(socket.id) || fallbackVisitorId);
+    });
 
     socket.on('pair-request', async (data) => {
-        const { number } = data;
+        touchVisitor(visitorSessions.get(socket.id) || fallbackVisitorId);
+        const { number } = data || {};
+        if (!number || String(number).replace(/\D/g, '').length < 10) {
+            socket.emit('pair-error', 'Enter a valid phone number with country code.');
+            return;
+        }
         const formattedNumber = number.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         console.log(chalk.cyan(`🔗 Web pairing request for: ${formattedNumber}`));
         
@@ -40,9 +107,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        visitorSessions.delete(socket.id);
+        saveVisitorData();
+        emitStats();
         console.log(chalk.gray('🌐 Web client disconnected'));
     });
 });
+
+setInterval(emitStats, 5000);
 
 // Listen for global pairing events
 if (global.pairEvents) {

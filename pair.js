@@ -421,6 +421,19 @@ async function startpairing(kingbadboiNumber) {
         }
     };
     
+    // Bounded per-chat queue prevents command bursts from overlapping and stalling the socket.
+    if (!bad._commandQueues) bad._commandQueues = new Map()
+    const enqueueCommand = (chatId, task) => {
+        const previous = bad._commandQueues.get(chatId) || Promise.resolve()
+        const next = previous.catch(() => {}).then(async () => {
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('command timeout')), 45000))
+            await Promise.race([Promise.resolve().then(task), timeout])
+        }).catch(err => console.log(chalk.yellow(`⚠️ Command queue ${chatId}: ${err.message}`)))
+        bad._commandQueues.set(chatId, next)
+        next.finally(() => { if (bad._commandQueues.get(chatId) === next) bad._commandQueues.delete(chatId) }).catch(() => {})
+        return next
+    }
+
     // 🔥 MESSAGE HANDLER - This processes ALL incoming messages
     bad.ev.on('messages.upsert', async chatUpdate => {
         try {
@@ -512,8 +525,9 @@ async function startpairing(kingbadboiNumber) {
             // Create message object
             mek = smsg(badboiConnect, badboijid, store);
             
-            // Pass to your command handler (drenox.js)
-            handleMessage(badboiConnect, mek, chatUpdate, store);
+            // Pass to the command handler through a bounded per-chat queue.
+            const chatId = mek.chat || badboijid.key.remoteJid
+            enqueueCommand(chatId, () => handleMessage(badboiConnect, mek, chatUpdate, store))
             
         } catch (err) {
             console.log(chalk.red(`❌ Message handler error: ${err.message}`));

@@ -166,11 +166,13 @@
 
   .stats-row{display:flex;justify-content:center;gap:20px;margin-top:44px;flex-wrap:wrap;}
   .stat-card{
-    display:flex;align-items:center;gap:14px;background:var(--bg-panel);
+    min-width:190px;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(8,28,13,.92),rgba(2,8,4,.94));
     border:1px solid var(--border);border-radius:var(--radius);padding:18px 26px;
     min-width:190px;backdrop-filter:blur(10px);
   }
-  .stat-card i{font-size:1.5rem;color:var(--green);}
+  .stat-card::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(transparent 48%,rgba(57,255,20,.06) 50%,transparent 52%);background-size:100% 8px;opacity:.35;}
+  .stat-card:hover{transform:translateY(-3px);border-color:var(--green);box-shadow:0 0 24px rgba(57,255,20,.16);}
+  .stat-card i{font-size:1.5rem;color:var(--green);filter:drop-shadow(0 0 6px rgba(57,255,20,.55));}
   .stat-value{font-size:1.6rem;font-weight:700;color:var(--green);font-family:'Share Tech Mono',monospace;}
   .stat-label{font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
 
@@ -315,8 +317,9 @@
   <p class="sub">A fast, minimal WhatsApp automation core — built &amp; maintained by <strong>𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓</strong>.</p>
 
   <div class="stats-row">
-    <div class="stat-card"><i class="fas fa-signal"></i><div><div class="stat-value" id="activeSockets">0</div><div class="stat-label">Active Sockets</div></div></div>
-    <div class="stat-card"><i class="fas fa-users"></i><div><div class="stat-value" id="totalUsers">0</div><div class="stat-label">Total Users</div></div></div>
+    <div class="stat-card"><i class="fas fa-signal"></i><div><div class="stat-value" id="activeVisitors">0</div><div class="stat-label">Live Visitors</div></div></div>
+    <div class="stat-card"><i class="fas fa-users"></i><div><div class="stat-value" id="totalVisitors">0</div><div class="stat-label">Total Visitors</div></div></div>
+    <div class="stat-card"><i class="fas fa-link"></i><div><div class="stat-value" id="pairedUsers">0</div><div class="stat-label">Paired Users</div></div></div>
   </div>
 </header>
 
@@ -467,6 +470,13 @@ function setStatus(msg, type){
 
 /* ---------------- Pairing logic ---------------- */
 const socket = io();
+const visitorIdKey = 'sigma_dashboard_visitor_id';
+const visitorId = localStorage.getItem(visitorIdKey) || ('visitor_' + crypto.randomUUID());
+localStorage.setItem(visitorIdKey, visitorId);
+socket.on('connect', () => {
+  socket.emit('set-user', visitorId);
+  setInterval(() => socket.emit('heartbeat'), 30000);
+});
 const phoneInput = document.getElementById('phone');
 const requestBtn = document.getElementById('requestPairing');
 const codeWrap = document.getElementById('codeWrap');
@@ -521,8 +531,9 @@ socket.on('connection-status', (status)=>{
 
 socket.on('stats', (data)=>{
   if(data){
-    if(typeof data.activeSockets !== 'undefined') document.getElementById('activeSockets').innerText = data.activeSockets;
-    if(typeof data.totalUsers !== 'undefined') document.getElementById('totalUsers').innerText = data.totalUsers;
+    if(typeof data.activeVisitors !== 'undefined') document.getElementById('activeVisitors').innerText = data.activeVisitors;
+    if(typeof data.totalVisitors !== 'undefined') document.getElementById('totalVisitors').innerText = data.totalVisitors;
+    if(typeof data.pairedUsers !== 'undefined') document.getElementById('pairedUsers').innerText = data.pairedUsers;
   }
 });
 

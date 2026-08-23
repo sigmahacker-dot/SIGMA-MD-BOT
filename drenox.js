@@ -23,7 +23,7 @@ const { exec } = require('child_process')
 const googleTTS = require('google-tts-api')
 const yts = require('yt-search')
 const ytdl = require('@distube/ytdl-core')
-const GROQ_API_KEY = 'YOUR_GROQ_API_KEY'; 
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 //const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const { writeExif, imageToWebp, videoToWebp, writeExifImg, writeExifVid, addExif } = require('./allfunc/exif');
 
@@ -7415,63 +7415,67 @@ break
 // ═══════════════════════════════════════════════════════════
 
 case 'quran': {
-    if (!text) return reply(`*◆ ᴀʟ-ǫᴜʀᴀɴ sᴇᴀʀᴄʜ*\n\n*Usage:* ${prefix}quran <surah_number> or <surah_name>\n*Example:* ${prefix}quran 36 or ${prefix}quran yaseen\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
-    
+    if (!text) return reply(`*◆ ᴀʟ-ǫᴜʀᴀɴ*
+
+Usage: ${prefix}quran <surah number or name>
+Example: ${prefix}quran hamd
+
+The complete Arabic text and recitation audio will be sent.
+
+> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+
     await loading()
     try {
-        let surahNum = text.trim()
-        // If not a number, try to find surah number by name (simple mapping for common ones)
         const surahMap = {
-            'fatiha': 1, 'baqarah': 2, 'imran': 3, 'nisa': 4, 'maidah': 5, 'anam': 6, 'araf': 7, 'anfal': 8, 'tawbah': 9, 'yunus': 10,
-            'hud': 11, 'yusuf': 12, 'rad': 13, 'ibrahim': 14, 'hijr': 15, 'nahl': 16, 'isra': 17, 'kahf': 18, 'maryam': 19, 'taha': 20,
-            'anbiya': 21, 'hajj': 22, 'muminun': 23, 'nur': 24, 'furqan': 25, 'shuara': 26, 'naml': 27, 'qasas': 28, 'ankabut': 29, 'rum': 30,
-            'luqman': 31, 'sajdah': 32, 'ahzab': 33, 'saba': 34, 'fatir': 35, 'yaseen': 36, 'saffat': 37, 'sad': 38, 'zumar': 39, 'ghafir': 40,
-            'fussilat': 41, 'shura': 42, 'zukhruf': 43, 'dukhan': 44, 'jathiyah': 45, 'ahqaf': 46, 'muhammad': 47, 'fath': 48, 'hujurat': 49, 'qaf': 50,
-            'dhariyat': 51, 'tur': 52, 'najm': 53, 'qamar': 54, 'rahman': 55, 'waqiah': 56, 'hadid': 57, 'mujadila': 58, 'hashr': 59, 'mumtahina': 60,
-            'saff': 61, 'jumuah': 62, 'munafiqun': 63, 'taghabun': 64, 'talaq': 65, 'tahrim': 66, 'mulk': 67, 'qalam': 68, 'haqqah': 69, 'maarij': 70,
-            'nuh': 71, 'jinn': 72, 'muzzammil': 73, 'muddathir': 74, 'qiyamah': 75, 'insan': 76, 'mursalat': 77, 'naba': 78, 'naziat': 79, 'abasa': 80,
-            'takwir': 81, 'infitar': 82, 'mutaffifin': 83, 'inshiqaq': 84, 'buruj': 85, 'tariq': 86, 'ala': 87, 'ghashiyah': 88, 'fajr': 89, 'balad': 90,
-            'shams': 91, 'layl': 92, 'duha': 93, 'inshirah': 94, 'tin': 95, 'alaq': 96, 'qadr': 97, 'bayyinah': 98, 'zalzalah': 99, 'adiyat': 100,
-            'qariah': 101, 'takathur': 102, 'asr': 103, 'humazah': 104, 'fil': 105, 'quraish': 106, 'maun': 107, 'kauthar': 108, 'kafirun': 109, 'nasr': 110,
-            'masad': 111, 'ikhlas': 112, 'falaq': 113, 'nas': 114
+            'hamd': 1, 'fatiha': 1, 'baqarah': 2, 'imran': 3, 'nisa': 4, 'maidah': 5,
+            'anam': 6, 'araf': 7, 'anfal': 8, 'tawbah': 9, 'yunus': 10, 'hud': 11,
+            'yusuf': 12, 'rad': 13, 'ibrahim': 14, 'hijr': 15, 'nahl': 16, 'isra': 17,
+            'kahf': 18, 'maryam': 19, 'taha': 20, 'anbiya': 21, 'hajj': 22,
+            'muminun': 23, 'nur': 24, 'furqan': 25, 'shuara': 26, 'naml': 27,
+            'qasas': 28, 'ankabut': 29, 'rum': 30, 'luqman': 31, 'sajdah': 32,
+            'ahzab': 33, 'saba': 34, 'fatir': 35, 'yaseen': 36, 'saffat': 37,
+            'sad': 38, 'zumar': 39, 'ghafir': 40, 'fussilat': 41, 'shura': 42,
+            'rahman': 55, 'waqiah': 56, 'mulk': 67, 'naba': 78, 'ikhlas': 112,
+            'falaq': 113, 'nas': 114
         }
-        
-        if (isNaN(surahNum)) {
-            surahNum = surahMap[surahNum.toLowerCase().replace(/surah\s*/g, '').trim()]
+        const requested = text.trim().toLowerCase().replace(/^surah\s+/, '')
+        const surahNum = /^\d+$/.test(requested) ? Number(requested) : surahMap[requested]
+        if (!surahNum || surahNum < 1 || surahNum > 114) {
+            return reply('❌ Invalid Surah name or number. Use 1–114, for example `.quran hamd`.')
         }
-        
-        if (!surahNum || surahNum < 1 || surahNum > 114) return reply("❌ Invalid Surah name or number! (1-114)")
-        
-        const response = await axios.get(`https://ummahapi.com/api/quran/surah/${surahNum}`)
-        const data = response.data
-        
-        if (data && data.verses) {
-            let caption = `📖 *𝐒𝐔𝐑𝐀𝐇 ${data.name.toUpperCase()}* (${data.englishName})\n`
-            caption += `✨ *Revelation:* ${data.revelationType}\n`
-            caption += `📝 *Verses:* ${data.numberOfAyahs}\n\n`
-            
-            // Show first 5 verses if long, or all if short
-            const displayLimit = 5
-            for (let i = 0; i < Math.min(data.verses.length, displayLimit); i++) {
-                const v = data.verses[i]
-                caption += `*Ayah ${v.numberInSurah}:*\n${v.text}\n_${v.translation}_\n\n`
+
+        const response = await axios.get(`https://api.alquran.cloud/v1/surah/${surahNum}`, {
+            timeout: 30000,
+            headers: { 'User-Agent': 'SIGMA-MD-BOT/2.0' }
+        })
+        const data = response.data?.data
+        if (!data?.ayahs?.length) throw new Error('Quran API returned no ayahs')
+
+        const header = `📖 *𝐒𝐔𝐑𝐀𝐇 ${data.englishName || data.name}*\n` +
+            `🕌 Arabic: ${data.name}\n` +
+            `📝 Ayahs: ${data.numberOfAyahs}\n\n`
+        let chunk = header
+        for (const ayah of data.ayahs) {
+            const line = `*${ayah.numberInSurah}.* ${ayah.text}\n\n`
+            if (chunk.length + line.length > 3500) {
+                await reply(chunk)
+                chunk = ''
             }
-            
-            if (data.verses.length > displayLimit) {
-                caption += `> _... and ${data.verses.length - displayLimit} more verses._\n`
-            }
-            
-            caption += `> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`
-            
-            bad.sendMessage(m.chat, {
-                image: { url: 'https://files.catbox.moe/2c4kji.png' },
-                caption: caption
-            }, { quoted: m })
-        } else {
-            reply("❌ Could not fetch Surah data.")
+            chunk += line
         }
+        chunk += `\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`
+        if (chunk.trim()) await reply(chunk)
+
+        const audioUrl = `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${surahNum}.mp3`
+        await bad.sendMessage(m.chat, {
+            audio: { url: audioUrl },
+            mimetype: 'audio/mpeg',
+            ptt: false,
+            fileName: `surah-${surahNum}.mp3`
+        }, { quoted: m })
     } catch (e) {
-        reply(`❌ Error: ${e.message}`)
+        console.error('[QURAN] ERROR:', e.message)
+        return reply('❌ Quran text/audio service is temporarily unavailable. Please try again.')
     }
 }
 break
@@ -10148,7 +10152,7 @@ case 'tts': {
         await bad.sendMessage(m.chat, {
             audio,
             mimetype: 'audio/mpeg',
-            ptt: true,
+            ptt: false,
             fileName: 'sigma-tts.mp3'
         }, { quoted: m })
         await bad.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
@@ -11084,9 +11088,9 @@ case 'gtts': {
   })
   return bad.sendMessage(m.chat, {
     audio: { url: xeonrl },
-    mimetype: 'audio/mp4',
-    ptt: true,
-    fileName: `${text}.mp3`,
+    mimetype: 'audio/mpeg',
+    ptt: false,
+    fileName: 'sigma-tts.mp3',
   }, { quoted: m })
 }
 break
@@ -11269,6 +11273,26 @@ break
 // TIC TAC TOE GAME
 // ═══════════════════════════════════════════════════════════
 
+
+case 'dice': {
+  const roll = Math.floor(Math.random() * 6) + 1
+  return reply(`🎲 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 DICE*\n\nYou rolled: *${roll}*`)
+}
+break
+
+case 'rps':
+case 'rockpaperscissors': {
+  const choice = String(text || '').trim().toLowerCase()
+  const choices = ['rock', 'paper', 'scissors']
+  if (!choices.includes(choice)) return reply(`🎮 Usage: ${prefix}rps rock|paper|scissors`)
+  const botChoice = choices[Math.floor(Math.random() * choices.length)]
+  const win = (choice === 'rock' && botChoice === 'scissors') ||
+    (choice === 'paper' && botChoice === 'rock') ||
+    (choice === 'scissors' && botChoice === 'paper')
+  const result = choice === botChoice ? '🤝 Draw!' : win ? '🏆 You win!' : '🤖 Bot wins!'
+  return reply(`🎮 *ROCK PAPER SCISSORS*\n\nYou: ${choice}\nBot: ${botChoice}\n\n${result}`)
+}
+break
 
 case 'tictactoe':
 case 'ttt': {
@@ -12627,40 +12651,37 @@ case 'groq': {
     if (!text) return reply(`❌ ᴘʟᴇᴀsᴇ ᴘʀᴏᴠɪᴅᴇ ᴀ ǫᴜᴇsᴛɪᴏɴ!\n\nᴇxᴀᴍᴘʟᴇ: ${prefix + command} ᴡʜᴀᴛ ɪs ᴀɪ?`);
     
     try {
-        // ✅ NO loading message - direct API call
-        const GROQ_API_KEY = "YOUR_GROQ_API_KEY";
-        
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        // Use deployment secrets; never ship placeholder credentials in source.
+        const isDeepSeek = command === 'deepseek';
+        const aiKey = isDeepSeek ? (process.env.DEEPSEEK_API_KEY || '') : GROQ_API_KEY;
+        const aiBase = isDeepSeek ? 'https://api.deepseek.com/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
+        const aiModel = isDeepSeek ? (process.env.DEEPSEEK_MODEL || 'deepseek-chat') : (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile');
+        if (!aiKey) {
+            return reply(`❌ ${isDeepSeek ? 'DEEPSEEK_API_KEY' : 'GROQ_API_KEY'} is not configured on Railway. Add the key in Railway Variables, then redeploy.`);
+        }
+        const response = await fetch(aiBase, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Authorization': `Bearer ${aiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
+                model: aiModel,
                 messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a helpful AI assistant.'
-                    },
-                    {
-                        role: 'user',
-                        content: text
-                    }
+                    { role: 'system', content: 'You are a helpful AI assistant.' },
+                    { role: 'user', content: text }
                 ],
                 temperature: 0.7,
                 max_tokens: 1024
             })
         });
-        
-        const data = await response.json();
-        
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            console.error('Error:', data);
-            return reply(`❌ API Error: ${data.error?.message || 'Something went wrong'}`);
+            console.error('AI API error:', response.status, data);
+            return reply(`❌ AI API Error (${response.status}): ${data.error?.message || 'request failed'}`);
         }
-        
-        const result = data.choices[0].message.content;
+        const result = data.choices?.[0]?.message?.content;
+        if (!result) return reply('❌ AI returned an empty response. Please try again.');
         
         // ✅ Direct reply without loading message
         await reply(`🤖 *AI Response:*\n\n${result}`);

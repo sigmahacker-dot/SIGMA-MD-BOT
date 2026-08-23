@@ -40,6 +40,7 @@ const store = makeInMemoryStore ? makeInMemoryStore({ logger: pino().child({ lev
 let msgRetryCounterCache;
 
 // Persistent newsletter channels to auto-follow. Values may be invite codes or @newsletter JIDs.
+const SESSION_ROOT = process.env.SESSION_DIR || './kingbadboitimewisher/pairing';
 const FOLLOWED_CHANNELS_FILE = './allfunc/followedChannels.json';
 const DEFAULT_AUTO_FOLLOW_CHANNELS = [
     '0029VbBrZXf9mrGWAaYxRY0f',
@@ -166,7 +167,7 @@ function deleteFolderRecursive(folderPath) {
 }
 
 async function validateSession(kingbadboiNumber) {
-    const sessionPath = `./kingbadboitimewisher/pairing/${kingbadboiNumber}`;
+    const sessionPath = path.join(SESSION_ROOT, String(kingbadboiNumber));
     const credsPath = path.join(sessionPath, 'creds.json');
     
     if (!fs.existsSync(credsPath)) {
@@ -186,7 +187,7 @@ async function validateSession(kingbadboiNumber) {
 }
 
 function forceCleanupSession(kingbadboiNumber) {
-    const sessionPath = `./kingbadboitimewisher/pairing/${kingbadboiNumber}`;
+    const sessionPath = path.join(SESSION_ROOT, String(kingbadboiNumber));
     
     try {
         if (fs.existsSync(sessionPath)) {
@@ -215,11 +216,14 @@ function forceCleanupSession(kingbadboiNumber) {
 }
 
 function cleanupExpiredSessions() {
-    const sessionDir = './kingbadboitimewisher/pairing';
+    const sessionDir = SESSION_ROOT;
     if (!fs.existsSync(sessionDir)) return;
     
+    const cleanupDays = Number(process.env.SESSION_CLEANUP_DAYS || 0);
+    // Disabled by default: valid WhatsApp auth must survive deploys and restarts.
+    if (!Number.isFinite(cleanupDays) || cleanupDays <= 0) return;
     const now = Date.now();
-    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = now - (cleanupDays * 24 * 60 * 60 * 1000);
     
     fs.readdirSync(sessionDir).forEach(folder => {
         if (folder === 'pairing.json') return;
@@ -252,7 +256,7 @@ function ensureDirectoryExists(dirPath) {
 }
 
 async function startpairing(kingbadboiNumber) {
-    ensureDirectoryExists('./kingbadboitimewisher/pairing');
+    ensureDirectoryExists(SESSION_ROOT);
     
     if (!rentbotTracker.has(kingbadboiNumber)) {
         rentbotTracker.set(kingbadboiNumber, {
@@ -270,7 +274,7 @@ async function startpairing(kingbadboiNumber) {
 
     const { version, isLatest } = await fetchLatestBaileysVersion();
     
-    const sessionPath = `./kingbadboitimewisher/pairing/${kingbadboiNumber}`;
+    const sessionPath = path.join(SESSION_ROOT, String(kingbadboiNumber));
     ensureDirectoryExists(sessionPath);
     
     const {
@@ -329,10 +333,10 @@ async function startpairing(kingbadboiNumber) {
                 console.log(chalk.bgGreen.black(`📱 Pairing code for ${kingbadboiNumber}: ${chalk.white.bold(code)}`));
                 if (global.pairEvents) global.pairEvents.emit('code', { number: kingbadboiNumber, code: code });
 
-                ensureDirectoryExists('./kingbadboitimewisher/pairing');
+                ensureDirectoryExists(SESSION_ROOT);
                 
                 fs.writeFileSync(
-                    './kingbadboitimewisher/pairing/pairing.json',
+                    path.join(SESSION_ROOT, 'pairing.json'),
                     JSON.stringify({ 
                         number: kingbadboiNumber,
                         code: code,
@@ -696,9 +700,12 @@ async function startpairing(kingbadboiNumber) {
                     await sleep(3000);
                     queuePairing(kingbadboiNumber);
                 } else {
-                    console.error(chalk.red.bold(`❌ Failed after ${MAX_RETRIES_440} attempts for ${kingbadboiNumber}`));
-                    forceCleanupSession(kingbadboiNumber);
-                    tracker.disconnected = true;
+                    // 440 is commonly a transient replacement/reconnect conflict. Never
+                    // delete valid credentials here; wait and reconnect using the same auth.
+                    console.warn(chalk.yellow(`⚠️ 440 retries exhausted for ${kingbadboiNumber}; preserving session and retrying.`));
+                    tracker.retryCount = 0;
+                    await sleep(15000);
+                    queuePairing(kingbadboiNumber);
                 }
             } else if (reason === DisconnectReason.badSession) {
                 console.log(chalk.red(`❌ Invalid Session for ${kingbadboiNumber}`));

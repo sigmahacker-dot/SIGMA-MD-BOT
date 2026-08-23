@@ -14,7 +14,7 @@ const figlet = require('figlet');
 const startpairing = require('./pair');
 
 const PORT = process.env.PORT || 8080;
-const PAIRING_DIR = './kingbadboitimewisher/pairing/';
+const PAIRING_DIR = process.env.SESSION_DIR || './kingbadboitimewisher/pairing/';
 const VISITOR_DB = path.join(__dirname, 'database', 'dashboard_visitors.json');
 const visitorSessions = new Map();
 const visitorData = new Map();

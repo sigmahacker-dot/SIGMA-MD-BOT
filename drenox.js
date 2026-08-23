@@ -6449,7 +6449,14 @@ case "ytmp4": {
             
             await bad.sendMessage(m.chat, {react: {text: '✅', key: m.key}});
         } else {
-            throw new Error('ɴᴏ ᴠɪᴅᴇᴏ ʟɪɴᴋ ғᴏᴜɴᴅ');
+            // Fallback: use the installed ytdl implementation when the external API is unavailable.
+            const videoStream = ytdl(text, { quality: '18', filter: 'audioandvideo' });
+            await bad.sendMessage(m.chat, {
+                video: videoStream,
+                caption: '╭━━━〔 *ʏᴏᴜᴛᴜʙᴇ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕━━━╮\n\n✅ Direct download fallback\n╰━━━━━━━━━━━━━━━━━╯',
+                mimetype: 'video/mp4'
+            }, { quoted: m });
+            await bad.sendMessage(m.chat, {react: {text: '✅', key: m.key}});
         }
         
     } catch (error) {
@@ -6544,8 +6551,26 @@ case 'song': {
       } catch (e) {}
     }
 
+    // Final fallback: download audio directly with the installed ytdl package.
+    if (!audioBuffer) {
+      try {
+        const audioStream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' })
+        const chunks = []
+        for await (const chunk of audioStream) {
+          chunks.push(chunk)
+          if (chunks.reduce((sum, part) => sum + part.length, 0) > 25 * 1024 * 1024) {
+            audioStream.destroy(new Error('Audio exceeds WhatsApp size limit'))
+            break
+          }
+        }
+        audioBuffer = Buffer.concat(chunks)
+      } catch (e) {
+        console.error('[PLAY] direct ytdl fallback failed:', e.message)
+      }
+    }
+
     if (!audioBuffer || audioBuffer.length < 1000) {
-      throw new Error('All YouTube download APIs failed or returned empty audio.')
+      throw new Error('YouTube audio could not be downloaded from the available sources.')
     }
 
     const buffer = audioBuffer
@@ -6562,8 +6587,7 @@ case 'song': {
       { quoted: m }
     )
 
-    // Cleanup
-    fs.rmSync(tempDir, { recursive: true, force: true })
+    // The API path is streamed into memory; there is no temporary directory to clean.
     await bad.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
   } catch (e) {
@@ -10104,52 +10128,34 @@ case 'calculate': {
 break;
 
 case 'tts': {
-    if (!text) return reply(`⚠️ Usage: ${prefix}tts <text>`);
-
+    if (!text) return reply(`⚠️ Usage: ${prefix}tts <text>`)
     try {
-        await bad.sendMessage(m.chat, { react: { text: '🔊', key: m.key } });
-        await reply('🔊 Generating speech...');
-
-        const gTTS = require('gtts');
-        const fs = require('fs');
-        const path = require('path');
-
-        const tempDir = path.join('/tmp', `tts-${Date.now()}`);
-        fs.mkdirSync(tempDir, { recursive: true });
-        const mp3File = path.join(tempDir, 'tts.mp3');
-
-        const gtts = new gTTS(text, 'en');
-
-        gtts.save(mp3File, async function(err) {
-            if (err) {
-                console.error('TTS Error:', err);
-                await bad.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return reply('❌ TTS failed.');
-            }
-
-            try {
-                const buffer = fs.readFileSync(mp3File);
-
-                await bad.sendMessage(m.chat, {
-                    audio: buffer,
-                    mimetype: 'audio/mpeg',
-                    ptt: true,
-                    fileName: 'tts.mp3'
-                }, { quoted: m });
-
-                fs.rmSync(tempDir, { recursive: true, force: true });
-                await bad.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
-
-            } catch (sendErr) {
-                console.error('Send Error:', sendErr);
-                reply('❌ Failed to send audio.');
-            }
-        });
-
+        await bad.sendMessage(m.chat, { react: { text: '🔊', key: m.key } })
+        await reply('🔊 Generating speech...')
+        const spokenText = String(text).trim().slice(0, 500)
+        const audioUrl = googleTTS.getAudioUrl(spokenText, {
+            lang: 'en',
+            slow: false,
+            host: 'https://translate.google.com'
+        })
+        const audioResponse = await axios.get(audioUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+        const audio = Buffer.from(audioResponse.data)
+        if (!audio.length) throw new Error('Google TTS returned empty audio')
+        await bad.sendMessage(m.chat, {
+            audio,
+            mimetype: 'audio/mpeg',
+            ptt: true,
+            fileName: 'sigma-tts.mp3'
+        }, { quoted: m })
+        await bad.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
     } catch (e) {
-        console.error('[TTS] ERROR:', e);
-        await bad.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-        reply('❌ TTS failed. Run: npm install gtts');
+        console.error('[TTS] ERROR:', e.message)
+        await bad.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+        return reply('❌ TTS service failed. Please try again with shorter text.')
     }
 }
 break;

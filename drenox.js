@@ -24,6 +24,33 @@ const googleTTS = require('google-tts-api')
 const yts = require('yt-search')
 const ytdl = require('@distube/ytdl-core')
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const COBALT_API_URL = process.env.COBALT_API_URL || 'https://api.cobalt.tools/';
+
+async function cobaltDownload(sourceUrl, downloadMode) {
+    const response = await axios.post(COBALT_API_URL, {
+        url: sourceUrl,
+        downloadMode,
+        audioFormat: 'mp3',
+        audioBitrate: '128',
+        videoQuality: '720',
+        filenameStyle: 'basic',
+        youtubeVideoContainer: 'mp4'
+    }, {
+        timeout: 45000,
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(process.env.COBALT_API_KEY ? { Authorization: `Api-Key ${process.env.COBALT_API_KEY}` } : {})
+        }
+    });
+    const data = response.data || {};
+    if ((data.status === 'redirect' || data.status === 'tunnel') && data.url) return data;
+    if (data.status === 'picker' && data.picker?.length) {
+        const item = data.picker.find((entry) => entry.type === 'video') || data.picker[0];
+        if (item?.url) return { ...data, url: item.url };
+    }
+    throw new Error(data.error?.code || 'Cobalt returned no downloadable URL');
+}
 //const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const { writeExif, imageToWebp, videoToWebp, writeExifImg, writeExifVid, addExif } = require('./allfunc/exif');
 
@@ -6418,6 +6445,16 @@ case "ytmp4": {
     
     try {
         await bad.sendMessage(m.chat, {react: {text: '⏳', key: m.key}});
+
+        // Prefer a Cobalt-compatible instance; RapidAPI remains a secondary fallback.
+        try {
+            const cobalt = await cobaltDownload(text, 'mute');
+            await bad.sendMessage(m.chat, { video: { url: cobalt.url }, mimetype: 'video/mp4', caption: '✅ YouTube video downloaded' }, { quoted: m });
+            await bad.sendMessage(m.chat, {react: {text: '✅', key: m.key}});
+            break;
+        } catch (cobaltError) {
+            console.warn('[YTMP4] Cobalt fallback unavailable:', cobaltError.message);
+        }
         
         const response = await axios.post('https://youtube-video-audio-downloader.p.rapidapi.com/videos/downloads', 
         {
@@ -6519,6 +6556,15 @@ case 'song': {
 
     // 3️⃣ Get audio buffer or download URL from robust multi-API fallbacks
     let audioBuffer = null
+
+    // API 0: Cobalt-compatible downloader (configure COBALT_API_URL for your own instance).
+    try {
+      const cobalt = await cobaltDownload(video.url, 'audio')
+      const dlRes = await axios.get(cobalt.url, { responseType: 'arraybuffer', timeout: 90000 })
+      audioBuffer = Buffer.from(dlRes.data)
+    } catch (e) {
+      console.warn('[PLAY] Cobalt fallback unavailable:', e.message)
+    }
     
     // API 1: Delirius API
     try {
@@ -7278,7 +7324,11 @@ ${prefix + command} @user`)
         ? m.quoted.sender 
         : null
 
-    let name = q ? q.trim().toLowerCase() : ''
+    const rawGaliQuery = q ? q.trim() : ''
+    const countMatch = rawGaliQuery.match(/(?:^|\s)(\d+)\s*$/)
+    const requestedCount = countMatch ? Number(countMatch[1]) : 1
+    const count = Math.min(Math.max(Number.isFinite(requestedCount) ? requestedCount : 1, 1), 100)
+    const name = (countMatch ? rawGaliQuery.slice(0, countMatch.index).trim() : rawGaliQuery).toLowerCase()
 
     let blocked = ['sigma', 'wajahat', 'ali', 'sigma hacker']
 
@@ -7395,8 +7445,9 @@ ${prefix + command} @user`)
         "chutmarike shakal se hijra lagta hai 🏳️‍🌈"
     ]
 
-    let selectedGali = galis[Math.floor(Math.random() * galis.length)]
-    let finalMsg = `${q || '@' + (target ? target.split('@')[0] : 'user')} - ${selectedGali}`
+    const recipient = name || '@' + (target ? target.split('@')[0] : 'user')
+    const selectedGalis = Array.from({ length: count }, () => galis[Math.floor(Math.random() * galis.length)])
+    const finalMsg = selectedGalis.map((line, index) => `${index + 1}. ${recipient} - ${line}`).join('\n')
 
     if (target) {
         return bad.sendMessage(m.chat, {

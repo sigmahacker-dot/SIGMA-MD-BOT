@@ -99,6 +99,7 @@ io.on('connection', (socket) => {
         const formattedNumber = number.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         console.log(chalk.cyan(`🔗 Web pairing request for: ${formattedNumber}`));
         
+        socket.data.pairNumber = formattedNumber;
         try {
             await startpairing(formattedNumber);
         } catch (error) {
@@ -119,11 +120,13 @@ setInterval(emitStats, 5000);
 // Listen for global pairing events
 if (global.pairEvents) {
     global.pairEvents.on('code', (data) => {
-        io.emit('pairing-code', data.code);
+        const target = [...io.sockets.sockets.values()].find((socket) => socket.data.pairNumber === data.number);
+        if (target) target.emit('pairing-code', data.code);
     });
 
     global.pairEvents.on('connected', (data) => {
-        io.emit('connection-status', { connected: true, number: data.number });
+        const target = [...io.sockets.sockets.values()].find((socket) => socket.data.pairNumber === data.number);
+        if (target) target.emit('connection-status', { connected: true, number: data.number });
     });
 }
 

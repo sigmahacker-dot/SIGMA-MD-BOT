@@ -475,7 +475,9 @@ const visitorId = localStorage.getItem(visitorIdKey) || ('visitor_' + crypto.ran
 localStorage.setItem(visitorIdKey, visitorId);
 socket.on('connect', () => {
   socket.emit('set-user', visitorId);
-  setInterval(() => socket.emit('heartbeat'), 30000);
+  if (!window.sigmaHeartbeat) {
+    window.sigmaHeartbeat = setInterval(() => socket.emit('heartbeat'), 30000);
+  }
 });
 const phoneInput = document.getElementById('phone');
 const requestBtn = document.getElementById('requestPairing');
@@ -525,7 +527,8 @@ socket.on('connection-status', (status)=>{
     pairingCode.style.borderColor = '#39ff14';
     setStatus('Device linked successfully!', 'success');
     showToast('CONNECTED SUCCESSFULLY!');
-    setTimeout(()=>location.reload(), 3000);
+    // Keep the linked dashboard in place; refreshing would recreate the socket
+    // and could show a second connection event for an already paired session.
   }
 });
 

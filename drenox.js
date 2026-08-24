@@ -24,7 +24,22 @@ const googleTTS = require('google-tts-api')
 const yts = require('yt-search')
 const ytdl = require('@distube/ytdl-core')
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 const COBALT_API_URL = process.env.COBALT_API_URL || 'https://api.cobalt.tools/';
+
+async function geminiGenerate(contents, generationConfig = {}) {
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not configured on Railway');
+    const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+        { contents: [{ role: 'user', parts: contents }], generationConfig: { temperature: 0.4, maxOutputTokens: 1200, ...generationConfig } },
+        { timeout: 60000, headers: { 'Content-Type': 'application/json' } }
+    );
+    const parts = response.data?.candidates?.[0]?.content?.parts || [];
+    const result = parts.map((part) => part.text || '').join('').trim();
+    if (!result) throw new Error('Gemini returned an empty response');
+    return result;
+}
 
 async function cobaltDownload(sourceUrl, downloadMode) {
     const response = await axios.post(COBALT_API_URL, {
@@ -10094,6 +10109,7 @@ case 'convert': {
 }
 break;
 
+case 'trans':
 case 'translate': {
     if (!text && !quoted) {
         return reply(`🌐 *Translate Usage*\n\n• ${prefix}translate hello -> fr\n• ${prefix}translate es how are you\n• Reply to message + ${prefix}translate en`);
@@ -12702,8 +12718,13 @@ case 'groq': {
     if (!text) return reply(`❌ ᴘʟᴇᴀsᴇ ᴘʀᴏᴠɪᴅᴇ ᴀ ǫᴜᴇsᴛɪᴏɴ!\n\nᴇxᴀᴍᴘʟᴇ: ${prefix + command} ᴡʜᴀᴛ ɪs ᴀɪ?`);
     
     try {
-        // Use deployment secrets; never ship placeholder credentials in source.
+        // Use deployment secrets; never ship credentials in source.
+        const isGemini = command === 'gemini';
         const isDeepSeek = command === 'deepseek';
+        if (isGemini) {
+            const result = await geminiGenerate([{ text }]);
+            return reply(`🤖 *Gemini Response:*\n\n${result}`);
+        }
         const aiKey = isDeepSeek ? (process.env.DEEPSEEK_API_KEY || '') : GROQ_API_KEY;
         const aiBase = isDeepSeek ? 'https://api.deepseek.com/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
         const aiModel = isDeepSeek ? (process.env.DEEPSEEK_MODEL || 'deepseek-chat') : (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile');
@@ -12740,6 +12761,32 @@ case 'groq': {
     } catch (error) {
         console.error('Error:', error);
         await reply(`❌ Error: ${error.message}`);
+    }
+}
+break;
+
+// ═══════════════════════════════════════════════════════
+// 🧠 Gemini vision / image description commands
+// ═══════════════════════════════════════════════════════
+case 'des':
+case 'describe':
+case 'vision': {
+    const imageMessage = m.quoted?.message?.imageMessage || m.quoted?.imageMessage || m.message?.imageMessage;
+    if (!imageMessage) return reply(`🖼️ Reply to an image with ${prefix}des <optional question>`);
+    try {
+        const stream = await downloadContentFromMessage(imageMessage, 'image');
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        const buffer = Buffer.concat(chunks);
+        if (!buffer.length) return reply('❌ Image download failed.');
+        const answer = await geminiGenerate([
+            { text: text || 'Describe this image in detail. Mention visible objects, text, colors, setting, and any important context.' },
+            { inlineData: { mimeType: imageMessage.mimetype || 'image/jpeg', data: buffer.toString('base64') } }
+        ]);
+        return reply(`🖼️ *Gemini Image Description*\n\n${answer}`);
+    } catch (error) {
+        console.error('[GEMINI VISION]', error);
+        return reply(`❌ Gemini vision failed: ${error.message}`);
     }
 }
 break;

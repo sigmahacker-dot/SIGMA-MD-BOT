@@ -27,6 +27,8 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 const COBALT_API_URL = process.env.COBALT_API_URL || 'https://api.cobalt.tools/';
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
+const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || 'youtube-mp310.p.rapidapi.com';
 
 async function geminiGenerate(contents, generationConfig = {}) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not configured on Railway');
@@ -39,6 +41,24 @@ async function geminiGenerate(contents, generationConfig = {}) {
     const result = parts.map((part) => part.text || '').join('').trim();
     if (!result) throw new Error('Gemini returned an empty response');
     return result;
+}
+
+async function rapidApiYoutubeMp3(sourceUrl) {
+    if (!RAPIDAPI_KEY) throw new Error('RAPIDAPI_KEY is not configured on Railway');
+    const response = await axios.get(`https://${RAPIDAPI_HOST}/download/mp3`, {
+        params: { url: sourceUrl },
+        timeout: 45000,
+        headers: {
+            'x-rapidapi-key': RAPIDAPI_KEY,
+            'x-rapidapi-host': RAPIDAPI_HOST
+        }
+    });
+    const downloadUrl = response.data?.downloadUrl || response.data?.url || response.data?.result?.downloadUrl;
+    if (!downloadUrl) throw new Error(response.data?.message || 'RapidAPI returned no MP3 URL');
+    const media = await axios.get(downloadUrl, { responseType: 'arraybuffer', timeout: 90000 });
+    const buffer = Buffer.from(media.data);
+    if (buffer.length < 1000) throw new Error('RapidAPI returned an empty MP3 file');
+    return buffer;
 }
 
 async function cobaltDownload(sourceUrl, downloadMode) {
@@ -6471,6 +6491,7 @@ case "ytmp4": {
             console.warn('[YTMP4] Cobalt fallback unavailable:', cobaltError.message);
         }
         
+        if (process.env.RAPIDAPI_KEY) {
         const response = await axios.post('https://youtube-video-audio-downloader.p.rapidapi.com/videos/downloads', 
         {
             url: text,
@@ -6479,7 +6500,7 @@ case "ytmp4": {
         {
             headers: {
                 'content-type': 'application/json',
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'youtube-video-audio-downloader.p.rapidapi.com'
             }
         });
@@ -6500,6 +6521,7 @@ case "ytmp4": {
             }, {quoted: m});
             
             await bad.sendMessage(m.chat, {react: {text: '✅', key: m.key}});
+        }
         } else {
             // Fallback: use the installed ytdl implementation when the external API is unavailable.
             const videoStream = ytdl(text, { quality: '18', filter: 'audioandvideo' });
@@ -6572,8 +6594,17 @@ case 'song': {
     // 3️⃣ Get audio buffer or download URL from robust multi-API fallbacks
     let audioBuffer = null
 
-    // API 0: Cobalt-compatible downloader (configure COBALT_API_URL for your own instance).
-    try {
+    // API 0: RapidAPI YouTube MP3 (configure RAPIDAPI_KEY in Railway Variables).
+    if (RAPIDAPI_KEY) {
+      try {
+        audioBuffer = await rapidApiYoutubeMp3(video.url)
+      } catch (e) {
+        console.warn('[PLAY] RapidAPI fallback unavailable:', e.message)
+      }
+    }
+
+    // API 1: Cobalt-compatible downloader (configure COBALT_API_URL for your own instance).
+    if (!audioBuffer) try {
       const cobalt = await cobaltDownload(video.url, 'audio')
       const dlRes = await axios.get(cobalt.url, { responseType: 'arraybuffer', timeout: 90000 })
       audioBuffer = Buffer.from(dlRes.data)
@@ -6581,8 +6612,8 @@ case 'song': {
       console.warn('[PLAY] Cobalt fallback unavailable:', e.message)
     }
     
-    // API 1: Delirius API
-    try {
+    // API 2: Delirius API
+    if (!audioBuffer) try {
       const res = await axios.get(`https://delirius-api-oficial.vercel.app/download/ytmp3?url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
       if (res.data && res.data.status && res.data.data?.download?.url) {
         const dlRes = await axios.get(res.data.data.download.url, { responseType: 'arraybuffer', timeout: 60000 })
@@ -6590,7 +6621,7 @@ case 'song': {
       }
     } catch (e) {}
 
-    // API 2: VQR / Apidog / Nexoracle Fallback
+    // API 3: VQR / Apidog / Nexoracle Fallback
     if (!audioBuffer) {
       try {
         const res = await axios.get(`https://api.nexoracle.com/downloader/yt-mp3?apikey=free_key@maher_apis&url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
@@ -6601,7 +6632,7 @@ case 'song': {
       } catch (e) {}
     }
 
-    // API 3: Dllia / SaveFrom / YTDL Public API
+    // API 4: Dllia / SaveFrom / YTDL Public API
     if (!audioBuffer) {
       try {
         const res = await axios.get(`https://apis.davidcyriltech.my.id/youtube/mp3?url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
@@ -6851,7 +6882,7 @@ case "fbdl": {
         const response = await axios.get('https://facebook-scraper3.p.rapidapi.com/video', {
             params: { url: text },
             headers: {
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'facebook-scraper3.p.rapidapi.com'
             }
         });
@@ -6900,7 +6931,7 @@ case "x": {
         const response = await axios.get('https://twitter-video-and-image-downloader.p.rapidapi.com/api/twitter/media', {
             params: { url: text },
             headers: {
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'twitter-video-and-image-downloader.p.rapidapi.com'
             }
         });
@@ -6964,7 +6995,7 @@ case "gen3": {
         {
             headers: {
                 'content-type': 'application/json',
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'runwayml.p.rapidapi.com'
             }
         });

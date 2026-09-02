@@ -814,38 +814,23 @@ async function startpairing(kingbadboiNumber) {
                     }
                 }
                 
-                // Send pairing success message to user's own chat (Message Yourself) matching requested style
+                // Send a clean private-agency connection message without channel metadata.
                 try {
                     const ownerJid = bad.user.id.split(':')[0] + '@s.whatsapp.net';
-                    const successMessage = `╭━━━〔 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗* 〕━━━╮\n\n` +
-                                         `✨ *Status:* Successfully Connected!\n` +
-                                         `👑 *Owner:* 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓\n` +
-                                         `📦 *Version:* 4.0\n` +
-                                         `⚡ *Mode:* Public / Multi-Device Active\n` +
-                                         `🔗 *Official Channel:* https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f\n\n` +
-                                         `🎉 *Thank you for choosing SIGMA MD BOT! Type .menu to explore commands.*`;
-                    
-                    await bad.sendMessage(ownerJid, {
-                        image: { url: 'https://files.catbox.moe/2c4kji.png' },
-                        caption: successMessage,
-                        contextInfo: {
-                            forwardingScore: 999,
-                            isForwarded: true,
-                            forwardedNewsletterMessageInfo: {
-                                newsletterJid: '120363427642583622@newsletter',
-                                newsletterName: '𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓',
-                                serverMessageId: 200
-                            }
-                        }
-                    });
+                    const successMessage = `🏔️ *Rawi Travel Agency — WhatsApp Connected*\n\n` +
+                                         `✅ Status: Successfully connected\n` +
+                                         `🔒 Mode: Private owner/staff desk\n` +
+                                         `💬 Customer intake: persons, days, and package type\n` +
+                                         `💰 Staff quotes: enabled\n\n` +
+                                         `Use .start to enable customer auto-replies or .off to pause them.`;
+                    await bad.sendMessage(ownerJid, { text: successMessage });
                 } catch (err) {
                     console.log(chalk.yellow(`⚠️ Failed to send pairing success message: ${err.message}`));
                 }
 
-                console.log(chalk.green.bold(`🎉 𓆩 Ｓ𝐈Ｇ𝐌Ａ 𓆪 online: ${kingbadboiNumber}`));
-                console.log(chalk.cyan(`📰 Newsletter auto-react is ACTIVE`));
-                console.log(chalk.cyan(`💓 Keep-alive running (silent mode)`));
-                console.log(chalk.green(`✅ All commands are functional!`));
+                console.log(chalk.green.bold(`🏔️ Rawi Travel Agency online: ${kingbadboiNumber}`));
+                console.log(chalk.cyan(`🔒 Private owner/staff mode active`));
+                console.log(chalk.green(`✅ Travel intake and staff quotes ready`));
             } catch (e) {
                 console.log(chalk.yellow(`⚠️ Auto-actions failed: ${e.message}`));
             }

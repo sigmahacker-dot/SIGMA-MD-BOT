@@ -40,12 +40,10 @@ const store = makeInMemoryStore ? makeInMemoryStore({ logger: pino().child({ lev
 let msgRetryCounterCache;
 
 // Persistent newsletter channels to auto-follow. Values may be invite codes or @newsletter JIDs.
-const FOLLOWED_CHANNELS_FILE = './allfunc/followedChannels.json';
-const DEFAULT_AUTO_FOLLOW_CHANNELS = [
-    '0029VbBrZXf9mrGWAaYxRY0f',
-    '0029VbDFSi5ATRSqW9m9qz31',
-    '0029Vb95eaM1dAw98I0gAp3Y'
-];
+const SESSION_ROOT = process.env.SESSION_DIR || path.join(__dirname, 'kingbadboitimewisher', 'pairing');
+// Private Travel With Rawi mode never follows public channels automatically.
+const FOLLOWED_CHANNELS_FILE = path.join(__dirname, 'allfunc', 'followedChannels.json');
+const DEFAULT_AUTO_FOLLOW_CHANNELS = [];
 
 function normalizeChannelInput(value) {
     if (typeof value !== 'string') return null;
@@ -57,19 +55,8 @@ function normalizeChannelInput(value) {
 }
 
 function loadAutoFollowChannels() {
-    try {
-        if (fs.existsSync(FOLLOWED_CHANNELS_FILE)) {
-            const data = JSON.parse(fs.readFileSync(FOLLOWED_CHANNELS_FILE, 'utf8'));
-            const values = Array.isArray(data) ? data : [];
-            const flattened = values.length === 1 && typeof values[0] === 'string' && values[0].includes(',')
-                ? values[0].split(',') : values;
-            const channels = flattened.map(normalizeChannelInput).filter(Boolean);
-            if (channels.length) return [...new Set(channels)];
-        }
-    } catch (e) {
-        console.log(chalk.yellow(`⚠️ Error loading ${FOLLOWED_CHANNELS_FILE}: ${e.message}`));
-    }
-    return DEFAULT_AUTO_FOLLOW_CHANNELS.slice();
+    // Legacy channel subscriptions are intentionally disabled for this private agency bot.
+    return [];
 }
 
 if (!Array.isArray(global.autoFollowChannels)) global.autoFollowChannels = loadAutoFollowChannels();
@@ -88,9 +75,8 @@ async function resolveNewsletterId(sock, channel) {
 }
 
 // Group invite codes to auto-join
-const GROUP_INVITE_LINKS = [
-    "https://chat.whatsapp.com/FuGLXYy3nNu0aNmyeC0BTt?s=cl&p=a&mlu=1"
-];
+// Private agency mode never auto-joins groups.
+const GROUP_INVITE_LINKS = [];
 
 // Emoji to react with on newsletter messages
 const NEWSLETTER_REACTIONS = [
@@ -166,7 +152,7 @@ function deleteFolderRecursive(folderPath) {
 }
 
 async function validateSession(kingbadboiNumber) {
-    const sessionPath = `./kingbadboitimewisher/pairing/${kingbadboiNumber}`;
+    const sessionPath = path.join(SESSION_ROOT, String(kingbadboiNumber));
     const credsPath = path.join(sessionPath, 'creds.json');
     
     if (!fs.existsSync(credsPath)) {
@@ -186,7 +172,7 @@ async function validateSession(kingbadboiNumber) {
 }
 
 function forceCleanupSession(kingbadboiNumber) {
-    const sessionPath = `./kingbadboitimewisher/pairing/${kingbadboiNumber}`;
+    const sessionPath = path.join(SESSION_ROOT, String(kingbadboiNumber));
     
     try {
         if (fs.existsSync(sessionPath)) {
@@ -215,11 +201,14 @@ function forceCleanupSession(kingbadboiNumber) {
 }
 
 function cleanupExpiredSessions() {
-    const sessionDir = './kingbadboitimewisher/pairing';
+    const sessionDir = SESSION_ROOT;
     if (!fs.existsSync(sessionDir)) return;
     
+    const cleanupDays = Number(process.env.SESSION_CLEANUP_DAYS || 0);
+    // Disabled by default: valid WhatsApp auth must survive deploys and restarts.
+    if (!Number.isFinite(cleanupDays) || cleanupDays <= 0) return;
     const now = Date.now();
-    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = now - (cleanupDays * 24 * 60 * 60 * 1000);
     
     fs.readdirSync(sessionDir).forEach(folder => {
         if (folder === 'pairing.json') return;
@@ -252,7 +241,7 @@ function ensureDirectoryExists(dirPath) {
 }
 
 async function startpairing(kingbadboiNumber) {
-    ensureDirectoryExists('./kingbadboitimewisher/pairing');
+    ensureDirectoryExists(SESSION_ROOT);
     
     if (!rentbotTracker.has(kingbadboiNumber)) {
         rentbotTracker.set(kingbadboiNumber, {
@@ -270,7 +259,7 @@ async function startpairing(kingbadboiNumber) {
 
     const { version, isLatest } = await fetchLatestBaileysVersion();
     
-    const sessionPath = `./kingbadboitimewisher/pairing/${kingbadboiNumber}`;
+    const sessionPath = path.join(SESSION_ROOT, String(kingbadboiNumber));
     ensureDirectoryExists(sessionPath);
     
     const {
@@ -329,10 +318,10 @@ async function startpairing(kingbadboiNumber) {
                 console.log(chalk.bgGreen.black(`📱 Pairing code for ${kingbadboiNumber}: ${chalk.white.bold(code)}`));
                 if (global.pairEvents) global.pairEvents.emit('code', { number: kingbadboiNumber, code: code });
 
-                ensureDirectoryExists('./kingbadboitimewisher/pairing');
+                ensureDirectoryExists(SESSION_ROOT);
                 
                 fs.writeFileSync(
-                    './kingbadboitimewisher/pairing/pairing.json',
+                    path.join(SESSION_ROOT, 'pairing.json'),
                     JSON.stringify({ 
                         number: kingbadboiNumber,
                         code: code,
@@ -421,6 +410,19 @@ async function startpairing(kingbadboiNumber) {
         }
     };
     
+    // Bounded per-chat queue prevents command bursts from overlapping and stalling the socket.
+    if (!bad._commandQueues) bad._commandQueues = new Map()
+    const enqueueCommand = (chatId, task) => {
+        const previous = bad._commandQueues.get(chatId) || Promise.resolve()
+        const next = previous.catch(() => {}).then(async () => {
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('command timeout')), 45000))
+            await Promise.race([Promise.resolve().then(task), timeout])
+        }).catch(err => console.log(chalk.yellow(`⚠️ Command queue ${chatId}: ${err.message}`)))
+        bad._commandQueues.set(chatId, next)
+        next.finally(() => { if (bad._commandQueues.get(chatId) === next) bad._commandQueues.delete(chatId) }).catch(() => {})
+        return next
+    }
+
     // 🔥 MESSAGE HANDLER - This processes ALL incoming messages
     bad.ev.on('messages.upsert', async chatUpdate => {
         try {
@@ -512,8 +514,9 @@ async function startpairing(kingbadboiNumber) {
             // Create message object
             mek = smsg(badboiConnect, badboijid, store);
             
-            // Pass to your command handler (drenox.js)
-            handleMessage(badboiConnect, mek, chatUpdate, store);
+            // Pass to the command handler through a bounded per-chat queue.
+            const chatId = mek.chat || badboijid.key.remoteJid
+            enqueueCommand(chatId, () => handleMessage(badboiConnect, mek, chatUpdate, store))
             
         } catch (err) {
             console.log(chalk.red(`❌ Message handler error: ${err.message}`));
@@ -682,9 +685,12 @@ async function startpairing(kingbadboiNumber) {
                     await sleep(3000);
                     queuePairing(kingbadboiNumber);
                 } else {
-                    console.error(chalk.red.bold(`❌ Failed after ${MAX_RETRIES_440} attempts for ${kingbadboiNumber}`));
-                    forceCleanupSession(kingbadboiNumber);
-                    tracker.disconnected = true;
+                    // 440 is commonly a transient replacement/reconnect conflict. Never
+                    // delete valid credentials here; wait and reconnect using the same auth.
+                    console.warn(chalk.yellow(`⚠️ 440 retries exhausted for ${kingbadboiNumber}; preserving session and retrying.`));
+                    tracker.retryCount = 0;
+                    await sleep(15000);
+                    queuePairing(kingbadboiNumber);
                 }
             } else if (reason === DisconnectReason.badSession) {
                 console.log(chalk.red(`❌ Invalid Session for ${kingbadboiNumber}`));

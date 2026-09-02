@@ -23,7 +23,69 @@ const { exec } = require('child_process')
 const googleTTS = require('google-tts-api')
 const yts = require('yt-search')
 const ytdl = require('@distube/ytdl-core')
-const GROQ_API_KEY = 'YOUR_GROQ_API_KEY'; 
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+const COBALT_API_URL = process.env.COBALT_API_URL || 'https://api.cobalt.tools/';
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
+const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || 'youtube-mp310.p.rapidapi.com';
+
+async function geminiGenerate(contents, generationConfig = {}) {
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not configured on Railway');
+    const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+        { contents: [{ role: 'user', parts: contents }], generationConfig: { temperature: 0.4, maxOutputTokens: 1200, ...generationConfig } },
+        { timeout: 60000, headers: { 'Content-Type': 'application/json' } }
+    );
+    const parts = response.data?.candidates?.[0]?.content?.parts || [];
+    const result = parts.map((part) => part.text || '').join('').trim();
+    if (!result) throw new Error('Gemini returned an empty response');
+    return result;
+}
+
+async function rapidApiYoutubeMp3(sourceUrl) {
+    if (!RAPIDAPI_KEY) throw new Error('RAPIDAPI_KEY is not configured on Railway');
+    const response = await axios.get(`https://${RAPIDAPI_HOST}/download/mp3`, {
+        params: { url: sourceUrl },
+        timeout: 45000,
+        headers: {
+            'x-rapidapi-key': RAPIDAPI_KEY,
+            'x-rapidapi-host': RAPIDAPI_HOST
+        }
+    });
+    const downloadUrl = response.data?.downloadUrl || response.data?.url || response.data?.result?.downloadUrl;
+    if (!downloadUrl) throw new Error(response.data?.message || 'RapidAPI returned no MP3 URL');
+    const media = await axios.get(downloadUrl, { responseType: 'arraybuffer', timeout: 90000 });
+    const buffer = Buffer.from(media.data);
+    if (buffer.length < 1000) throw new Error('RapidAPI returned an empty MP3 file');
+    return buffer;
+}
+
+async function cobaltDownload(sourceUrl, downloadMode) {
+    const response = await axios.post(COBALT_API_URL, {
+        url: sourceUrl,
+        downloadMode,
+        audioFormat: 'mp3',
+        audioBitrate: '128',
+        videoQuality: '720',
+        filenameStyle: 'basic',
+        youtubeVideoContainer: 'mp4'
+    }, {
+        timeout: 45000,
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(process.env.COBALT_API_KEY ? { Authorization: `Api-Key ${process.env.COBALT_API_KEY}` } : {})
+        }
+    });
+    const data = response.data || {};
+    if ((data.status === 'redirect' || data.status === 'tunnel') && data.url) return data;
+    if (data.status === 'picker' && data.picker?.length) {
+        const item = data.picker.find((entry) => entry.type === 'video') || data.picker[0];
+        if (item?.url) return { ...data, url: item.url };
+    }
+    throw new Error(data.error?.code || 'Cobalt returned no downloadable URL');
+}
 //const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const { writeExif, imageToWebp, videoToWebp, writeExifImg, writeExifVid, addExif } = require('./allfunc/exif');
 
@@ -82,8 +144,27 @@ if (!global.chatbotData) {
   global.chatbotData = new Map() // Stores conversation history per user
 }
 if (!global.chatbot) {
-  global.chatbot = new Set() // Stores groups where chatbot is enabled
+  global.chatbot = new Set() // Legacy compatibility
 }
+
+// Private Travel With Rawi chatbot state. State is process-global and persisted to JSON.
+const travelStatePath = path.join(__dirname, 'database', 'travel_state.json')
+const travelLeadsPath = path.join(__dirname, 'database', 'travel_leads.json')
+function readJsonSafe(filePath, fallback) {
+  try { return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : fallback } catch (_) { return fallback }
+}
+function writeJsonSafe(filePath, value) {
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true })
+    fs.writeFileSync(filePath, JSON.stringify(value, null, 2))
+  } catch (err) { console.error('Travel state write error:', err.message) }
+}
+if (!global.travelBotEnabled) global.travelBotEnabled = Boolean(readJsonSafe(travelStatePath, { enabled: false }).enabled)
+if (!global.travelLeads) global.travelLeads = readJsonSafe(travelLeadsPath, {})
+const travelStaffNumbers = () => new Set([
+  '923555052009', '923379742452',
+  ...(process.env.TRAVEL_STAFF_NUMBERS || '').split(',').map(v => normalizeJid(v.trim())).filter(Boolean)
+])
 
 const processedStatuses = new Set()
 const activePresence = new Map()
@@ -728,22 +809,22 @@ const q = text;
 const senderJid = m.sender
 	const senderNumber = normalizeJid(senderJid)
 	
-	// ✅ Record user to database
+	// ✅ Record deduplicated lifetime and recent activity data
 	try {
-	    const usersDbPath = path.join(__dirname, 'database', 'users.json')
-	    if (!fs.existsSync(path.join(__dirname, 'database'))) fs.mkdirSync(path.join(__dirname, 'database'), { recursive: true })
-	    let usersList = []
-	    if (fs.existsSync(usersDbPath)) {
-	        usersList = JSON.parse(fs.readFileSync(usersDbPath, 'utf8'))
-	    }
-	    if (!usersList.includes(senderNumber)) {
-	        usersList.push(senderNumber)
-	        fs.writeFileSync(usersDbPath, JSON.stringify(usersList, null, 2))
-	    }
+	    const databaseDir = path.join(__dirname, 'database')
+	    if (!fs.existsSync(databaseDir)) fs.mkdirSync(databaseDir, { recursive: true })
+	    const usersDbPath = path.join(databaseDir, 'users.json')
+	    const activityPath = path.join(databaseDir, 'active_users.json')
+	    let usersList = fs.existsSync(usersDbPath) ? JSON.parse(fs.readFileSync(usersDbPath, 'utf8')) : []
+	    usersList = [...new Set(usersList.map(String).filter(Boolean))]
+	    if (!usersList.includes(String(senderNumber))) usersList.push(String(senderNumber))
+	    fs.writeFileSync(usersDbPath, JSON.stringify(usersList, null, 2))
+	    const activity = fs.existsSync(activityPath) ? JSON.parse(fs.readFileSync(activityPath, 'utf8')) : {}
+	    activity[String(senderNumber)] = Date.now()
+	    fs.writeFileSync(activityPath, JSON.stringify(activity, null, 2))
 	} catch (e) {
 	    console.error('Failed to update users database:', e)
 	}
-
 // ✅ Bot check
 const isBot = m.key.fromMe || isSameUser(senderJid, botJid) || areJidsSameUser(senderJid, botJid)
 
@@ -794,6 +875,17 @@ try {
 } catch (e) {
   console.log(chalk.red('❌ Owner check error:', e.message))
 }
+
+    // Private agency mode: never operate in groups and expose only travel controls.
+    const earlyTravelStaff = isCreator || travelStaffNumbers().has(senderNumber)
+    const travelOnlyCommands = new Set(['start', 'off', 'travelstatus', 'travel-status', 'newlead', 'price', 'quote', 'travelmenu'])
+    if (m.isGroup) return
+    if (isCmd && !travelOnlyCommands.has(command)) {
+      if (earlyTravelStaff) {
+        await bad.sendMessage(from, { text: '*Travel With Rawi is in private agency mode.*\nAvailable controls: `.start`, `.off`, `.travelstatus`, `.newlead`, `.price <customer_number> <quote>`.' }, { quoted: m })
+      }
+      return
+    }
     
     let groupMetadata = null
     let participants = []
@@ -826,6 +918,17 @@ try {
     const pushname = m.pushName || "ɴᴏ ɴᴀᴍᴇ"
     const quoted = m.quoted ? m.quoted : m
     const mime = (quoted.msg || quoted).mimetype || ''
+
+    // Staff can reply directly to the lead notification; route the quote to that customer.
+    if (!m.isGroup && senderIsTravelStaff && !isCmd && m.quoted && body.trim()) {
+      const quotedBody = String(m.quoted.text || m.quoted.body || m.quoted.msg?.conversation || m.quoted.msg?.extendedTextMessage?.text || '')
+      const targetMatch = quotedBody.match(/WhatsApp:\s*([0-9]{7,20}(?:@s\.whatsapp\.net)?)/i)
+      if (targetMatch) {
+        const targetJid = targetMatch[1].includes('@') ? targetMatch[1] : `${targetMatch[1]}@s.whatsapp.net`
+        await bad.sendMessage(targetJid, { text: `*🏔️ Travel With Rawi – Package Update*\n\n${body.trim()}\n\nThank you for choosing Travel With Rawi. Please let us know if you need any further assistance. ✨` })
+        return
+      }
+    }
     
     const time = moment(Date.now()).tz('Asia/Karachi').locale('id').format('HH:mm:ss z')
 const todayDate = new Date().toLocaleDateString('id-ID', {
@@ -844,16 +947,16 @@ if (global.autobio) {
   bad.updateProfileStatus(`𓆩 𝗦𝗜𝗚𝗠𝗔 𝗠𝗗 𝗕𝗢𝗧 𓆪 | ᴜᴘᴛɪᴍᴇ: ${runtime(process.uptime())}`).catch(_ => _)
 }
     
+    const OFFICIAL_CHANNEL_LINK = 'https://whatsapp.com/channel/0029VbBrZXf9mrGWAaYxRY0f'
     const reply = async (teks) => {
+  const bodyText = String(teks ?? '')
+  const decorated = bodyText.includes(OFFICIAL_CHANNEL_LINK)
+    ? bodyText
+    : `${bodyText}\n\n╭─〔 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 〕─╮\n│ View Channel: ${OFFICIAL_CHANNEL_LINK}\n╰────────────────────╯`
   try {
-    await bad.sendMessage(from, {
-      text: teks,
-      mentions: [sender]
-    });
+    await bad.sendMessage(from, { text: decorated, mentions: [sender] })
   } catch (error) {
-    await bad.sendMessage(from, {
-      text: teks
-    });
+    await bad.sendMessage(from, { text: decorated })
   }
 };
 
@@ -1304,9 +1407,107 @@ ${boardDisplay}
     }
 
 // ═══════════════════════════════════════
+    // ═══════════════════════════════════════
+    // PRIVATE TRAVEL WITH RAWI CUSTOMER INTAKE
+    // ═══════════════════════════════════════
+    const travelStaff = travelStaffNumbers()
+    const senderIsTravelStaff = isCreator || travelStaff.has(senderNumber)
+    const customerKey = String(from)
+    const travelReply = async (message) => bad.sendMessage(from, { text: message }, { quoted: m })
+    const travelGreeting = `*🥀 Assalamalaikum sir/mam 🥀*\n\n*🏔️ GB Adventure – Travel With Rawi*\n✨ Skardu • Hunza • Deosai • Astore • Naltar & More\n🚙 Tours • Honeymoon • Family Trips • Group Tours\n\nDear Sir/Ma’am,\n\nThank you for contacting Travel With Rawi!\n\nKindly tell us: how many persons are travelling?`
+
+    if (!isCmd && !m.isGroup && global.travelBotEnabled && !senderIsTravelStaff && !isBot) {
+      let lead = global.travelLeads[customerKey]
+      if (!lead) {
+        lead = { step: 'persons', createdAt: Date.now(), updatedAt: Date.now(), jid: from, name: pushname }
+        global.travelLeads[customerKey] = lead
+        writeJsonSafe(travelLeadsPath, global.travelLeads)
+        return travelReply(travelGreeting)
+      }
+      const answer = body.trim()
+      if (!answer) return
+      if (lead.step === 'persons') {
+        const persons = Number.parseInt(answer.match(/\\d+/)?.[0], 10)
+        if (!persons || persons < 1 || persons > 1000) return travelReply('Please tell us the number of travelling persons, for example: *4*')
+        lead.persons = persons; lead.step = 'days'
+        global.travelLeads[customerKey] = lead; writeJsonSafe(travelLeadsPath, global.travelLeads)
+        return travelReply('Thank you. How many days do you want to spend in the North?')
+      }
+      if (lead.step === 'days') {
+        const days = Number.parseInt(answer.match(/\\d+/)?.[0], 10)
+        if (!days || days < 1 || days > 365) return travelReply('Please tell us the number of days, for example: *7 days*')
+        lead.days = days; lead.step = 'package';
+        global.travelLeads[customerKey] = lead; writeJsonSafe(travelLeadsPath, global.travelLeads)
+        return travelReply('Which package would you like to avail?\n• Standard\n• Deluxe\n• Luxury')
+      }
+      if (lead.step === 'package') {
+        const selected = answer.toLowerCase()
+        const packageName = ['standard', 'deluxe', 'luxury'].find(p => selected.includes(p))
+        if (!packageName) return travelReply('Please choose one package: *Standard*, *Deluxe*, or *Luxury*.')
+        lead.package = packageName[0].toUpperCase() + packageName.slice(1); lead.step = 'complete'; lead.updatedAt = Date.now()
+        global.travelLeads[customerKey] = lead; writeJsonSafe(travelLeadsPath, global.travelLeads)
+        const leadText = `*🏔️ NEW TRAVEL INQUIRY – TRAVEL WITH RAWI*\\n\\n👤 Customer: ${lead.name || 'Guest'}\\n📱 WhatsApp: ${from}\\n👥 Persons: ${lead.persons}\\n📅 Days: ${lead.days}\\n📦 Package: ${lead.package}\\n\\nPlease review and reply to this customer with the current price and itinerary.`
+        for (const staffNumber of travelStaff) {
+          try { await bad.sendMessage(`${staffNumber}@s.whatsapp.net`, { text: leadText }) } catch (err) { console.error('Travel staff notification failed:', err.message) }
+        }
+        return travelReply('Thank you for sharing your details. Our travel consultant will review the best itinerary and price for you shortly. ✨')
+      }
+      if (lead.step === 'complete') return travelReply('Your inquiry is with our travel consultant. We will share the latest price and itinerary shortly. ✨')
+    }
+
     // COMMAND HANDLER START
     // ═══════════════════════════════════════
     switch(command) {
+
+case 'start': {
+  if (!senderIsTravelStaff) return reply('This private travel control is available only to the owner and approved staff.')
+  global.travelBotEnabled = true
+  writeJsonSafe(travelStatePath, { enabled: true, updatedAt: Date.now(), updatedBy: senderNumber })
+  return reply('✅ *Travel With Rawi auto-reply is ON.*\nCustomer inquiries will now be collected and sent to the owner/staff team.')
+}
+break
+
+case 'off': {
+  if (!senderIsTravelStaff) return reply('This private travel control is available only to the owner and approved staff.')
+  global.travelBotEnabled = false
+  writeJsonSafe(travelStatePath, { enabled: false, updatedAt: Date.now(), updatedBy: senderNumber })
+  return reply('🛑 *Travel With Rawi auto-reply is OFF.*\nCustomer messages will no longer receive automatic intake replies.')
+}
+break
+
+case 'travelstatus':
+case 'travel-status': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  return reply(`*Travel With Rawi status:* ${global.travelBotEnabled ? 'ON ✅' : 'OFF 🛑'}\nStaff numbers: ${travelStaff.size}`)
+}
+break
+
+case 'newlead': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  delete global.travelLeads[String(from)]
+  writeJsonSafe(travelLeadsPath, global.travelLeads)
+  return reply('✅ Your current travel inquiry has been reset. The next customer message will start again from persons.')
+}
+break
+
+case 'travelmenu': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  return reply('*Travel With Rawi – Staff Controls*\n\n.start — enable customer intake\n.off — pause customer intake\n.travelstatus — show current state\n.newlead — reset the current staff chat lead\n.price <customer number> <quote> — send a quote to a customer\n\nYou may also reply directly to a lead notification with the price and itinerary.')
+}
+break
+
+case 'price':
+case 'quote': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  const quoteParts = text.split(/\\s+/).filter(Boolean)
+  const targetNumber = String(quoteParts.shift() || '').replace(/\\D/g, '')
+  const quoteText = quoteParts.join(' ').trim()
+  if (targetNumber.length < 10 || !quoteText) return reply(`Usage: ${prefix}price <customer_number> <price and itinerary>`)
+  const targetJid = `${targetNumber}@s.whatsapp.net`
+  await bad.sendMessage(targetJid, { text: `*🏔️ Travel With Rawi – Your Tailored Package*\n\n${quoteText}\n\nThank you for choosing Travel With Rawi. Please let us know if you need any further assistance. ✨` })
+  return reply(`✅ Quote sent to ${targetNumber}.`)
+}
+break
 
 case 'follow': {
     if (!isCreator) return m.reply(mess.only.owner)
@@ -6418,7 +6619,18 @@ case "ytmp4": {
     
     try {
         await bad.sendMessage(m.chat, {react: {text: '⏳', key: m.key}});
+
+        // Prefer a Cobalt-compatible instance; RapidAPI remains a secondary fallback.
+        try {
+            const cobalt = await cobaltDownload(text, 'mute');
+            await bad.sendMessage(m.chat, { video: { url: cobalt.url }, mimetype: 'video/mp4', caption: '✅ YouTube video downloaded' }, { quoted: m });
+            await bad.sendMessage(m.chat, {react: {text: '✅', key: m.key}});
+            break;
+        } catch (cobaltError) {
+            console.warn('[YTMP4] Cobalt fallback unavailable:', cobaltError.message);
+        }
         
+        if (process.env.RAPIDAPI_KEY) {
         const response = await axios.post('https://youtube-video-audio-downloader.p.rapidapi.com/videos/downloads', 
         {
             url: text,
@@ -6427,7 +6639,7 @@ case "ytmp4": {
         {
             headers: {
                 'content-type': 'application/json',
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'youtube-video-audio-downloader.p.rapidapi.com'
             }
         });
@@ -6448,8 +6660,16 @@ case "ytmp4": {
             }, {quoted: m});
             
             await bad.sendMessage(m.chat, {react: {text: '✅', key: m.key}});
+        }
         } else {
-            throw new Error('ɴᴏ ᴠɪᴅᴇᴏ ʟɪɴᴋ ғᴏᴜɴᴅ');
+            // Fallback: use the installed ytdl implementation when the external API is unavailable.
+            const videoStream = ytdl(text, { quality: '18', filter: 'audioandvideo' });
+            await bad.sendMessage(m.chat, {
+                video: videoStream,
+                caption: '╭━━━〔 *ʏᴏᴜᴛᴜʙᴇ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕━━━╮\n\n✅ Direct download fallback\n╰━━━━━━━━━━━━━━━━━╯',
+                mimetype: 'video/mp4'
+            }, { quoted: m });
+            await bad.sendMessage(m.chat, {react: {text: '✅', key: m.key}});
         }
         
     } catch (error) {
@@ -6512,9 +6732,27 @@ case 'song': {
 
     // 3️⃣ Get audio buffer or download URL from robust multi-API fallbacks
     let audioBuffer = null
+
+    // API 0: RapidAPI YouTube MP3 (configure RAPIDAPI_KEY in Railway Variables).
+    if (RAPIDAPI_KEY) {
+      try {
+        audioBuffer = await rapidApiYoutubeMp3(video.url)
+      } catch (e) {
+        console.warn('[PLAY] RapidAPI fallback unavailable:', e.message)
+      }
+    }
+
+    // API 1: Cobalt-compatible downloader (configure COBALT_API_URL for your own instance).
+    if (!audioBuffer) try {
+      const cobalt = await cobaltDownload(video.url, 'audio')
+      const dlRes = await axios.get(cobalt.url, { responseType: 'arraybuffer', timeout: 90000 })
+      audioBuffer = Buffer.from(dlRes.data)
+    } catch (e) {
+      console.warn('[PLAY] Cobalt fallback unavailable:', e.message)
+    }
     
-    // API 1: Delirius API
-    try {
+    // API 2: Delirius API
+    if (!audioBuffer) try {
       const res = await axios.get(`https://delirius-api-oficial.vercel.app/download/ytmp3?url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
       if (res.data && res.data.status && res.data.data?.download?.url) {
         const dlRes = await axios.get(res.data.data.download.url, { responseType: 'arraybuffer', timeout: 60000 })
@@ -6522,7 +6760,7 @@ case 'song': {
       }
     } catch (e) {}
 
-    // API 2: VQR / Apidog / Nexoracle Fallback
+    // API 3: VQR / Apidog / Nexoracle Fallback
     if (!audioBuffer) {
       try {
         const res = await axios.get(`https://api.nexoracle.com/downloader/yt-mp3?apikey=free_key@maher_apis&url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
@@ -6533,7 +6771,7 @@ case 'song': {
       } catch (e) {}
     }
 
-    // API 3: Dllia / SaveFrom / YTDL Public API
+    // API 4: Dllia / SaveFrom / YTDL Public API
     if (!audioBuffer) {
       try {
         const res = await axios.get(`https://apis.davidcyriltech.my.id/youtube/mp3?url=${encodeURIComponent(video.url)}`, { timeout: 15000 })
@@ -6544,8 +6782,26 @@ case 'song': {
       } catch (e) {}
     }
 
+    // Final fallback: download audio directly with the installed ytdl package.
+    if (!audioBuffer) {
+      try {
+        const audioStream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' })
+        const chunks = []
+        for await (const chunk of audioStream) {
+          chunks.push(chunk)
+          if (chunks.reduce((sum, part) => sum + part.length, 0) > 25 * 1024 * 1024) {
+            audioStream.destroy(new Error('Audio exceeds WhatsApp size limit'))
+            break
+          }
+        }
+        audioBuffer = Buffer.concat(chunks)
+      } catch (e) {
+        console.error('[PLAY] direct ytdl fallback failed:', e.message)
+      }
+    }
+
     if (!audioBuffer || audioBuffer.length < 1000) {
-      throw new Error('All YouTube download APIs failed or returned empty audio.')
+      throw new Error('YouTube audio could not be downloaded from the available sources.')
     }
 
     const buffer = audioBuffer
@@ -6562,8 +6818,7 @@ case 'song': {
       { quoted: m }
     )
 
-    // Cleanup
-    fs.rmSync(tempDir, { recursive: true, force: true })
+    // The API path is streamed into memory; there is no temporary directory to clean.
     await bad.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
   } catch (e) {
@@ -6766,7 +7021,7 @@ case "fbdl": {
         const response = await axios.get('https://facebook-scraper3.p.rapidapi.com/video', {
             params: { url: text },
             headers: {
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'facebook-scraper3.p.rapidapi.com'
             }
         });
@@ -6815,7 +7070,7 @@ case "x": {
         const response = await axios.get('https://twitter-video-and-image-downloader.p.rapidapi.com/api/twitter/media', {
             params: { url: text },
             headers: {
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'twitter-video-and-image-downloader.p.rapidapi.com'
             }
         });
@@ -6879,7 +7134,7 @@ case "gen3": {
         {
             headers: {
                 'content-type': 'application/json',
-                'x-rapidapi-key': 'e73bff0542msha94d08136fc4eeep184ff6jsn5bcade1d7824',
+                'x-rapidapi-key': process.env.RAPIDAPI_KEY,
                 'x-rapidapi-host': 'runwayml.p.rapidapi.com'
             }
         });
@@ -7254,7 +7509,11 @@ ${prefix + command} @user`)
         ? m.quoted.sender 
         : null
 
-    let name = q ? q.trim().toLowerCase() : ''
+    const rawGaliQuery = q ? q.trim() : ''
+    const countMatch = rawGaliQuery.match(/(?:^|\s)(\d+)\s*$/)
+    const requestedCount = countMatch ? Number(countMatch[1]) : 1
+    const count = Math.min(Math.max(Number.isFinite(requestedCount) ? requestedCount : 1, 1), 100)
+    const name = (countMatch ? rawGaliQuery.slice(0, countMatch.index).trim() : rawGaliQuery).toLowerCase()
 
     let blocked = ['sigma', 'wajahat', 'ali', 'sigma hacker']
 
@@ -7371,8 +7630,9 @@ ${prefix + command} @user`)
         "chutmarike shakal se hijra lagta hai 🏳️‍🌈"
     ]
 
-    let selectedGali = galis[Math.floor(Math.random() * galis.length)]
-    let finalMsg = `${q || '@' + (target ? target.split('@')[0] : 'user')} - ${selectedGali}`
+    const recipient = name || '@' + (target ? target.split('@')[0] : 'user')
+    const selectedGalis = Array.from({ length: count }, () => galis[Math.floor(Math.random() * galis.length)])
+    const finalMsg = selectedGalis.map((line, index) => `${index + 1}. ${recipient} - ${line}`).join('\n')
 
     if (target) {
         return bad.sendMessage(m.chat, {
@@ -7391,63 +7651,67 @@ break
 // ═══════════════════════════════════════════════════════════
 
 case 'quran': {
-    if (!text) return reply(`*◆ ᴀʟ-ǫᴜʀᴀɴ sᴇᴀʀᴄʜ*\n\n*Usage:* ${prefix}quran <surah_number> or <surah_name>\n*Example:* ${prefix}quran 36 or ${prefix}quran yaseen\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
-    
+    if (!text) return reply(`*◆ ᴀʟ-ǫᴜʀᴀɴ*
+
+Usage: ${prefix}quran <surah number or name>
+Example: ${prefix}quran hamd
+
+The complete Arabic text and recitation audio will be sent.
+
+> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`)
+
     await loading()
     try {
-        let surahNum = text.trim()
-        // If not a number, try to find surah number by name (simple mapping for common ones)
         const surahMap = {
-            'fatiha': 1, 'baqarah': 2, 'imran': 3, 'nisa': 4, 'maidah': 5, 'anam': 6, 'araf': 7, 'anfal': 8, 'tawbah': 9, 'yunus': 10,
-            'hud': 11, 'yusuf': 12, 'rad': 13, 'ibrahim': 14, 'hijr': 15, 'nahl': 16, 'isra': 17, 'kahf': 18, 'maryam': 19, 'taha': 20,
-            'anbiya': 21, 'hajj': 22, 'muminun': 23, 'nur': 24, 'furqan': 25, 'shuara': 26, 'naml': 27, 'qasas': 28, 'ankabut': 29, 'rum': 30,
-            'luqman': 31, 'sajdah': 32, 'ahzab': 33, 'saba': 34, 'fatir': 35, 'yaseen': 36, 'saffat': 37, 'sad': 38, 'zumar': 39, 'ghafir': 40,
-            'fussilat': 41, 'shura': 42, 'zukhruf': 43, 'dukhan': 44, 'jathiyah': 45, 'ahqaf': 46, 'muhammad': 47, 'fath': 48, 'hujurat': 49, 'qaf': 50,
-            'dhariyat': 51, 'tur': 52, 'najm': 53, 'qamar': 54, 'rahman': 55, 'waqiah': 56, 'hadid': 57, 'mujadila': 58, 'hashr': 59, 'mumtahina': 60,
-            'saff': 61, 'jumuah': 62, 'munafiqun': 63, 'taghabun': 64, 'talaq': 65, 'tahrim': 66, 'mulk': 67, 'qalam': 68, 'haqqah': 69, 'maarij': 70,
-            'nuh': 71, 'jinn': 72, 'muzzammil': 73, 'muddathir': 74, 'qiyamah': 75, 'insan': 76, 'mursalat': 77, 'naba': 78, 'naziat': 79, 'abasa': 80,
-            'takwir': 81, 'infitar': 82, 'mutaffifin': 83, 'inshiqaq': 84, 'buruj': 85, 'tariq': 86, 'ala': 87, 'ghashiyah': 88, 'fajr': 89, 'balad': 90,
-            'shams': 91, 'layl': 92, 'duha': 93, 'inshirah': 94, 'tin': 95, 'alaq': 96, 'qadr': 97, 'bayyinah': 98, 'zalzalah': 99, 'adiyat': 100,
-            'qariah': 101, 'takathur': 102, 'asr': 103, 'humazah': 104, 'fil': 105, 'quraish': 106, 'maun': 107, 'kauthar': 108, 'kafirun': 109, 'nasr': 110,
-            'masad': 111, 'ikhlas': 112, 'falaq': 113, 'nas': 114
+            'hamd': 1, 'fatiha': 1, 'baqarah': 2, 'imran': 3, 'nisa': 4, 'maidah': 5,
+            'anam': 6, 'araf': 7, 'anfal': 8, 'tawbah': 9, 'yunus': 10, 'hud': 11,
+            'yusuf': 12, 'rad': 13, 'ibrahim': 14, 'hijr': 15, 'nahl': 16, 'isra': 17,
+            'kahf': 18, 'maryam': 19, 'taha': 20, 'anbiya': 21, 'hajj': 22,
+            'muminun': 23, 'nur': 24, 'furqan': 25, 'shuara': 26, 'naml': 27,
+            'qasas': 28, 'ankabut': 29, 'rum': 30, 'luqman': 31, 'sajdah': 32,
+            'ahzab': 33, 'saba': 34, 'fatir': 35, 'yaseen': 36, 'saffat': 37,
+            'sad': 38, 'zumar': 39, 'ghafir': 40, 'fussilat': 41, 'shura': 42,
+            'rahman': 55, 'waqiah': 56, 'mulk': 67, 'naba': 78, 'ikhlas': 112,
+            'falaq': 113, 'nas': 114
         }
-        
-        if (isNaN(surahNum)) {
-            surahNum = surahMap[surahNum.toLowerCase().replace(/surah\s*/g, '').trim()]
+        const requested = text.trim().toLowerCase().replace(/^surah\s+/, '')
+        const surahNum = /^\d+$/.test(requested) ? Number(requested) : surahMap[requested]
+        if (!surahNum || surahNum < 1 || surahNum > 114) {
+            return reply('❌ Invalid Surah name or number. Use 1–114, for example `.quran hamd`.')
         }
-        
-        if (!surahNum || surahNum < 1 || surahNum > 114) return reply("❌ Invalid Surah name or number! (1-114)")
-        
-        const response = await axios.get(`https://ummahapi.com/api/quran/surah/${surahNum}`)
-        const data = response.data
-        
-        if (data && data.verses) {
-            let caption = `📖 *𝐒𝐔𝐑𝐀𝐇 ${data.name.toUpperCase()}* (${data.englishName})\n`
-            caption += `✨ *Revelation:* ${data.revelationType}\n`
-            caption += `📝 *Verses:* ${data.numberOfAyahs}\n\n`
-            
-            // Show first 5 verses if long, or all if short
-            const displayLimit = 5
-            for (let i = 0; i < Math.min(data.verses.length, displayLimit); i++) {
-                const v = data.verses[i]
-                caption += `*Ayah ${v.numberInSurah}:*\n${v.text}\n_${v.translation}_\n\n`
+
+        const response = await axios.get(`https://api.alquran.cloud/v1/surah/${surahNum}`, {
+            timeout: 30000,
+            headers: { 'User-Agent': 'SIGMA-MD-BOT/2.0' }
+        })
+        const data = response.data?.data
+        if (!data?.ayahs?.length) throw new Error('Quran API returned no ayahs')
+
+        const header = `📖 *𝐒𝐔𝐑𝐀𝐇 ${data.englishName || data.name}*\n` +
+            `🕌 Arabic: ${data.name}\n` +
+            `📝 Ayahs: ${data.numberOfAyahs}\n\n`
+        let chunk = header
+        for (const ayah of data.ayahs) {
+            const line = `*${ayah.numberInSurah}.* ${ayah.text}\n\n`
+            if (chunk.length + line.length > 3500) {
+                await reply(chunk)
+                chunk = ''
             }
-            
-            if (data.verses.length > displayLimit) {
-                caption += `> _... and ${data.verses.length - displayLimit} more verses._\n`
-            }
-            
-            caption += `> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`
-            
-            bad.sendMessage(m.chat, {
-                image: { url: 'https://files.catbox.moe/2c4kji.png' },
-                caption: caption
-            }, { quoted: m })
-        } else {
-            reply("❌ Could not fetch Surah data.")
+            chunk += line
         }
+        chunk += `\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓*`
+        if (chunk.trim()) await reply(chunk)
+
+        const audioUrl = `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${surahNum}.mp3`
+        await bad.sendMessage(m.chat, {
+            audio: { url: audioUrl },
+            mimetype: 'audio/mpeg',
+            ptt: false,
+            fileName: `surah-${surahNum}.mp3`
+        }, { quoted: m })
     } catch (e) {
-        reply(`❌ Error: ${e.message}`)
+        console.error('[QURAN] ERROR:', e.message)
+        return reply('❌ Quran text/audio service is temporarily unavailable. Please try again.')
     }
 }
 break
@@ -10015,6 +10279,7 @@ case 'convert': {
 }
 break;
 
+case 'trans':
 case 'translate': {
     if (!text && !quoted) {
         return reply(`🌐 *Translate Usage*\n\n• ${prefix}translate hello -> fr\n• ${prefix}translate es how are you\n• Reply to message + ${prefix}translate en`);
@@ -10104,52 +10369,34 @@ case 'calculate': {
 break;
 
 case 'tts': {
-    if (!text) return reply(`⚠️ Usage: ${prefix}tts <text>`);
-
+    if (!text) return reply(`⚠️ Usage: ${prefix}tts <text>`)
     try {
-        await bad.sendMessage(m.chat, { react: { text: '🔊', key: m.key } });
-        await reply('🔊 Generating speech...');
-
-        const gTTS = require('gtts');
-        const fs = require('fs');
-        const path = require('path');
-
-        const tempDir = path.join('/tmp', `tts-${Date.now()}`);
-        fs.mkdirSync(tempDir, { recursive: true });
-        const mp3File = path.join(tempDir, 'tts.mp3');
-
-        const gtts = new gTTS(text, 'en');
-
-        gtts.save(mp3File, async function(err) {
-            if (err) {
-                console.error('TTS Error:', err);
-                await bad.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return reply('❌ TTS failed.');
-            }
-
-            try {
-                const buffer = fs.readFileSync(mp3File);
-
-                await bad.sendMessage(m.chat, {
-                    audio: buffer,
-                    mimetype: 'audio/mpeg',
-                    ptt: true,
-                    fileName: 'tts.mp3'
-                }, { quoted: m });
-
-                fs.rmSync(tempDir, { recursive: true, force: true });
-                await bad.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
-
-            } catch (sendErr) {
-                console.error('Send Error:', sendErr);
-                reply('❌ Failed to send audio.');
-            }
-        });
-
+        await bad.sendMessage(m.chat, { react: { text: '🔊', key: m.key } })
+        await reply('🔊 Generating speech...')
+        const spokenText = String(text).trim().slice(0, 500)
+        const audioUrl = googleTTS.getAudioUrl(spokenText, {
+            lang: 'en',
+            slow: false,
+            host: 'https://translate.google.com'
+        })
+        const audioResponse = await axios.get(audioUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+        const audio = Buffer.from(audioResponse.data)
+        if (!audio.length) throw new Error('Google TTS returned empty audio')
+        await bad.sendMessage(m.chat, {
+            audio,
+            mimetype: 'audio/mpeg',
+            ptt: false,
+            fileName: 'sigma-tts.mp3'
+        }, { quoted: m })
+        await bad.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
     } catch (e) {
-        console.error('[TTS] ERROR:', e);
-        await bad.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-        reply('❌ TTS failed. Run: npm install gtts');
+        console.error('[TTS] ERROR:', e.message)
+        await bad.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+        return reply('❌ TTS service failed. Please try again with shorter text.')
     }
 }
 break;
@@ -11078,9 +11325,9 @@ case 'gtts': {
   })
   return bad.sendMessage(m.chat, {
     audio: { url: xeonrl },
-    mimetype: 'audio/mp4',
-    ptt: true,
-    fileName: `${text}.mp3`,
+    mimetype: 'audio/mpeg',
+    ptt: false,
+    fileName: 'sigma-tts.mp3',
   }, { quoted: m })
 }
 break
@@ -11263,6 +11510,26 @@ break
 // TIC TAC TOE GAME
 // ═══════════════════════════════════════════════════════════
 
+
+case 'dice': {
+  const roll = Math.floor(Math.random() * 6) + 1
+  return reply(`🎲 *𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 DICE*\n\nYou rolled: *${roll}*`)
+}
+break
+
+case 'rps':
+case 'rockpaperscissors': {
+  const choice = String(text || '').trim().toLowerCase()
+  const choices = ['rock', 'paper', 'scissors']
+  if (!choices.includes(choice)) return reply(`🎮 Usage: ${prefix}rps rock|paper|scissors`)
+  const botChoice = choices[Math.floor(Math.random() * choices.length)]
+  const win = (choice === 'rock' && botChoice === 'scissors') ||
+    (choice === 'paper' && botChoice === 'rock') ||
+    (choice === 'scissors' && botChoice === 'paper')
+  const result = choice === botChoice ? '🤝 Draw!' : win ? '🏆 You win!' : '🤖 Bot wins!'
+  return reply(`🎮 *ROCK PAPER SCISSORS*\n\nYou: ${choice}\nBot: ${botChoice}\n\n${result}`)
+}
+break
 
 case 'tictactoe':
 case 'ttt': {
@@ -12621,40 +12888,42 @@ case 'groq': {
     if (!text) return reply(`❌ ᴘʟᴇᴀsᴇ ᴘʀᴏᴠɪᴅᴇ ᴀ ǫᴜᴇsᴛɪᴏɴ!\n\nᴇxᴀᴍᴘʟᴇ: ${prefix + command} ᴡʜᴀᴛ ɪs ᴀɪ?`);
     
     try {
-        // ✅ NO loading message - direct API call
-        const GROQ_API_KEY = "YOUR_GROQ_API_KEY";
-        
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        // Use deployment secrets; never ship credentials in source.
+        const isGemini = command === 'gemini';
+        const isDeepSeek = command === 'deepseek';
+        if (isGemini) {
+            const result = await geminiGenerate([{ text }]);
+            return reply(`🤖 *Gemini Response:*\n\n${result}`);
+        }
+        const aiKey = isDeepSeek ? (process.env.DEEPSEEK_API_KEY || '') : GROQ_API_KEY;
+        const aiBase = isDeepSeek ? 'https://api.deepseek.com/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
+        const aiModel = isDeepSeek ? (process.env.DEEPSEEK_MODEL || 'deepseek-chat') : (process.env.GROQ_MODEL || 'llama-3.3-70b-versatile');
+        if (!aiKey) {
+            return reply(`❌ ${isDeepSeek ? 'DEEPSEEK_API_KEY' : 'GROQ_API_KEY'} is not configured on Railway. Add the key in Railway Variables, then redeploy.`);
+        }
+        const response = await fetch(aiBase, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Authorization': `Bearer ${aiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
+                model: aiModel,
                 messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a helpful AI assistant.'
-                    },
-                    {
-                        role: 'user',
-                        content: text
-                    }
+                    { role: 'system', content: 'You are a helpful AI assistant.' },
+                    { role: 'user', content: text }
                 ],
                 temperature: 0.7,
                 max_tokens: 1024
             })
         });
-        
-        const data = await response.json();
-        
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            console.error('Error:', data);
-            return reply(`❌ API Error: ${data.error?.message || 'Something went wrong'}`);
+            console.error('AI API error:', response.status, data);
+            return reply(`❌ AI API Error (${response.status}): ${data.error?.message || 'request failed'}`);
         }
-        
-        const result = data.choices[0].message.content;
+        const result = data.choices?.[0]?.message?.content;
+        if (!result) return reply('❌ AI returned an empty response. Please try again.');
         
         // ✅ Direct reply without loading message
         await reply(`🤖 *AI Response:*\n\n${result}`);
@@ -12662,6 +12931,32 @@ case 'groq': {
     } catch (error) {
         console.error('Error:', error);
         await reply(`❌ Error: ${error.message}`);
+    }
+}
+break;
+
+// ═══════════════════════════════════════════════════════
+// 🧠 Gemini vision / image description commands
+// ═══════════════════════════════════════════════════════
+case 'des':
+case 'describe':
+case 'vision': {
+    const imageMessage = m.quoted?.message?.imageMessage || m.quoted?.imageMessage || m.message?.imageMessage;
+    if (!imageMessage) return reply(`🖼️ Reply to an image with ${prefix}des <optional question>`);
+    try {
+        const stream = await downloadContentFromMessage(imageMessage, 'image');
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        const buffer = Buffer.concat(chunks);
+        if (!buffer.length) return reply('❌ Image download failed.');
+        const answer = await geminiGenerate([
+            { text: text || 'Describe this image in detail. Mention visible objects, text, colors, setting, and any important context.' },
+            { inlineData: { mimeType: imageMessage.mimetype || 'image/jpeg', data: buffer.toString('base64') } }
+        ]);
+        return reply(`🖼️ *Gemini Image Description*\n\n${answer}`);
+    } catch (error) {
+        console.error('[GEMINI VISION]', error);
+        return reply(`❌ Gemini vision failed: ${error.message}`);
     }
 }
 break;
@@ -13658,38 +13953,32 @@ module.exports = async function handleMessage(bad, mek, chatUpdate, store) {
             if (fromMe) continue
             
 // ==================== EXTRACT MESSAGE BODY ====================
-// group only
-if (!chatId.endsWith('@g.us')) return
+// Extract before chat-specific logic; the old order referenced chatId before declaration.
+if (msg.key.fromMe) continue
 
-// ignore bot messages
-if (msg.key.fromMe) return
-
-// body extract
 const messageTypes = msg.message
-
 const chatId = msg.key.remoteJid
 let body = messageTypes?.conversation || 
            messageTypes?.extendedTextMessage?.text || 
-           messageTypes?.imageMessage?.caption || 
            messageTypes?.videoMessage?.caption || 
+           messageTypes?.imageMessage?.caption || 
            messageTypes?.audioMessage?.caption ||
            messageTypes?.documentMessage?.caption ||
            ''
 
-// bot admin check
-const metadata = await bad.groupMetadata(chatId)
-const botId = bad.user.id.split(':')[0] + '@s.whatsapp.net'
-const isBotAdmin = metadata.participants.find(p => p.id === botId)?.admin
-if (!isBotAdmin) return
-
-// antilink setting
-const antilink = getSetting(chatId, "antilink") || "delete"
-
-// link detection
-if (antilink && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
-  if (antilink === "delete") {
-    await bad.sendMessage(chatId, { delete: msg.key })
-  }
+// Group moderation must not block DMs or the general command router.
+if (chatId.endsWith('@g.us')) {
+    try {
+        const metadata = await bad.groupMetadata(chatId)
+        const botId = bad.user.id.split(':')[0] + '@s.whatsapp.net'
+        const isBotAdmin = metadata.participants.find(p => p.id === botId)?.admin
+        const antilink = getSetting(chatId, "antilink") || "delete"
+        if (isBotAdmin && antilink === "delete" && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
+            await bad.sendMessage(chatId, { delete: msg.key })
+        }
+    } catch (moderationError) {
+        console.error('❌ Group moderation error:', moderationError.message)
+    }
 }
             
             // ==================== AUTO PRESENCE ====================
@@ -13768,9 +14057,9 @@ if (antilink && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
                 continue
             }
             
-            // ==================== CHATBOT (GROUPS) ====================
-            if (!global.chatbot || !global.chatbot.has(from)) continue
-            
+                        // ==================== CHATBOT (GROUPS) ====================
+            // Chatbot is optional; it must not short-circuit normal commands.
+            if (global.chatbot && global.chatbot.has(from)) {
             console.log(`🤖 Chatbot enabled in group: ${from}`)
             
             const botNumber = bad.user.id.split(':')[0] + '@s.whatsapp.net'
@@ -13854,6 +14143,7 @@ if (antilink && /(https?:\/\/|www\.|chat\.whatsapp\.com)/i.test(body)) {
             }
             
             await bad.sendPresenceUpdate('paused', from)
+            }
             
         } catch (err) {
             console.error('❌ Message handler error:', err.message)

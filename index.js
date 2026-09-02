@@ -1,6 +1,6 @@
 /**
- * SIGMA MD BOT - CORE
- * Enhanced with Web Dashboard and Telegram Pairing
+ * Travel With Rawi - private WhatsApp travel desk
+ * Pairing dashboard and persistent session loader
  */
 
 const express = require('express');
@@ -14,7 +14,52 @@ const figlet = require('figlet');
 const startpairing = require('./pair');
 
 const PORT = process.env.PORT || 8080;
-const PAIRING_DIR = './kingbadboitimewisher/pairing/';
+// On Railway, mount a Volume at /data and set SESSION_DIR=/data/sessions.
+const PAIRING_DIR = process.env.SESSION_DIR || path.join(__dirname, 'kingbadboitimewisher', 'pairing');
+const VISITOR_DB = path.join(__dirname, 'database', 'dashboard_visitors.json');
+const visitorSessions = new Map();
+const visitorData = new Map();
+
+function loadVisitorData() {
+    try {
+        if (!fs.existsSync(path.dirname(VISITOR_DB))) fs.mkdirSync(path.dirname(VISITOR_DB), { recursive: true });
+        if (fs.existsSync(VISITOR_DB)) {
+            const parsed = JSON.parse(fs.readFileSync(VISITOR_DB, 'utf8'));
+            Object.entries(parsed).forEach(([id, value]) => visitorData.set(id, value));
+        }
+    } catch (error) {
+        console.log(chalk.yellow('⚠️ Visitor database unavailable:', error.message));
+    }
+}
+
+function saveVisitorData() {
+    try {
+        fs.writeFileSync(VISITOR_DB, JSON.stringify(Object.fromEntries(visitorData), null, 2));
+    } catch (error) {
+        console.log(chalk.yellow('⚠️ Visitor database save failed:', error.message));
+    }
+}
+
+function getPairedCount() {
+    if (!fs.existsSync(PAIRING_DIR)) return 0;
+    return fs.readdirSync(PAIRING_DIR, { withFileTypes: true })
+        .filter(entry => entry.isDirectory() && entry.name.endsWith('@s.whatsapp.net'))
+        .filter(entry => fs.existsSync(path.join(PAIRING_DIR, entry.name, 'creds.json'))).length;
+}
+
+function emitStats() {
+    const cutoff = Date.now() - 120000;
+    const activeVisitors = [...visitorData.values()].filter(item => Number(item.lastSeen) >= cutoff).length;
+    io.emit('stats', {
+        activeSockets: io.sockets.sockets.size,
+        activeVisitors,
+        totalVisitors: visitorData.size,
+        pairedUsers: getPairedCount(),
+        serverTime: Date.now()
+    });
+}
+
+loadVisitorData();
 
 // Serve static files
 app.use(express.static(path.join(__dirname)));
@@ -26,12 +71,36 @@ app.get('/', (req, res) => {
 // Socket.io Handlers
 io.on('connection', (socket) => {
     console.log(chalk.blue('🌐 New web client connected'));
+    const fallbackVisitorId = `socket_${socket.id}`;
+    const touchVisitor = (visitorId) => {
+        const id = String(visitorId || fallbackVisitorId).slice(0, 120);
+        visitorSessions.set(socket.id, id);
+        visitorData.set(id, { lastSeen: Date.now() });
+        if (visitorData.size % 5 === 0) saveVisitorData();
+        emitStats();
+    };
+    touchVisitor(fallbackVisitorId);
+
+    socket.on('set-user', (data) => {
+        const visitorId = typeof data === 'string' ? data : data?.userId;
+        touchVisitor(visitorId || fallbackVisitorId);
+    });
+
+    socket.on('heartbeat', () => {
+        touchVisitor(visitorSessions.get(socket.id) || fallbackVisitorId);
+    });
 
     socket.on('pair-request', async (data) => {
-        const { number } = data;
+        touchVisitor(visitorSessions.get(socket.id) || fallbackVisitorId);
+        const { number } = data || {};
+        if (!number || String(number).replace(/\D/g, '').length < 10) {
+            socket.emit('pair-error', 'Enter a valid phone number with country code.');
+            return;
+        }
         const formattedNumber = number.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         console.log(chalk.cyan(`🔗 Web pairing request for: ${formattedNumber}`));
         
+        socket.data.pairNumber = formattedNumber;
         try {
             await startpairing(formattedNumber);
         } catch (error) {
@@ -40,18 +109,25 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        visitorSessions.delete(socket.id);
+        saveVisitorData();
+        emitStats();
         console.log(chalk.gray('🌐 Web client disconnected'));
     });
 });
 
+setInterval(emitStats, 5000);
+
 // Listen for global pairing events
 if (global.pairEvents) {
     global.pairEvents.on('code', (data) => {
-        io.emit('pairing-code', data.code);
+        const target = [...io.sockets.sockets.values()].find((socket) => socket.data.pairNumber === data.number);
+        if (target) target.emit('pairing-code', data.code);
     });
 
     global.pairEvents.on('connected', (data) => {
-        io.emit('connection-status', { connected: true, number: data.number });
+        const target = [...io.sockets.sockets.values()].find((socket) => socket.data.pairNumber === data.number);
+        if (target) target.emit('connection-status', { connected: true, number: data.number });
     });
 }
 
@@ -91,10 +167,10 @@ const autoLoadPairs = async () => {
 
 const initializeBot = async () => {
     console.clear();
-    console.log(chalk.green(figlet.textSync('SIGMA MD', { font: 'Standard' })));
+    console.log(chalk.green(figlet.textSync('RAWI TRAVEL', { font: 'Standard' })));
     
     console.log(chalk.yellow('\n═══════════════════════════════════════════════'));
-    console.log(chalk.green('   𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 𝐏𝐀𝐈𝐑𝐈𝐍𝐆 𝐒𝐘𝐒𝐓𝐄𝐌       '));
+    console.log(chalk.green('   TRAVEL WITH RAWI · PRIVATE PAIRING SYSTEM   '));
     console.log(chalk.yellow('═══════════════════════════════════════════════\n'));
 
     // Start Web Server
@@ -104,9 +180,9 @@ const initializeBot = async () => {
 
     // Load Telegram Bot
     try {
-        console.log(chalk.blue('📱 Loading Telegram pairing system...'));
+        console.log(chalk.blue('📱 Loading optional staff pairing service...'));
         require('./bot');
-        console.log(chalk.green('✅ Telegram bot loaded successfully!'));
+        console.log(chalk.green('✅ Staff pairing service loaded successfully!'));
     } catch (error) {
         console.log(chalk.red('❌ Failed to load Telegram bot:', error.message));
     }
@@ -114,7 +190,7 @@ const initializeBot = async () => {
     // Auto-load existing sessions
     await autoLoadPairs();
     
-    console.log(chalk.green('✅ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 system is fully operational!\n'));
+    console.log(chalk.green('✅ Travel With Rawi private desk is fully operational!\n'));
 };
 
 // Error handlers

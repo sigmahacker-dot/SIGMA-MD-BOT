@@ -1416,6 +1416,31 @@ ${boardDisplay}
     const travelReply = async (message) => bad.sendMessage(from, { text: message }, { quoted: m })
     const travelGreeting = `*🥀 Assalamalaikum sir/mam 🥀*\n\n*🏔️ GB Adventure – Travel With Rawi*\n✨ Skardu • Hunza • Deosai • Astore • Naltar & More\n🚙 Tours • Honeymoon • Family Trips • Group Tours\n\nDear Sir/Ma’am,\n\nThank you for contacting Travel With Rawi!\n\nKindly tell us: how many persons are travelling?`
 
+    // Priority travel controls: handle these before the legacy command switch.
+    // This also supports testing from the paired WhatsApp account's self-chat.
+    if (isCmd && ['start', 'off', 'travelstatus', 'travel-status', 'newlead', 'travelmenu'].includes(command)) {
+      if (!senderIsTravelStaff) return reply('This private travel control is available only to the owner and approved staff.')
+      if (command === 'start') {
+        global.travelBotEnabled = true
+        writeJsonSafe(travelStatePath, { enabled: true, updatedAt: Date.now(), updatedBy: senderNumber })
+        return reply('✅ *Travel With Rawi auto-reply is ON.*\\nCustomer inquiries will now be collected and sent to the owner/staff team.')
+      }
+      if (command === 'off') {
+        global.travelBotEnabled = false
+        writeJsonSafe(travelStatePath, { enabled: false, updatedAt: Date.now(), updatedBy: senderNumber })
+        return reply('🛑 *Travel With Rawi auto-reply is OFF.*\\nCustomer messages will no longer receive automatic intake replies.')
+      }
+      if (command === 'travelstatus' || command === 'travel-status') {
+        return reply(`*Travel With Rawi status:* ${global.travelBotEnabled ? 'ON ✅' : 'OFF 🛑'}\\nStaff numbers: ${travelStaff.size}`)
+      }
+      if (command === 'newlead') {
+        delete global.travelLeads[String(from)]
+        writeJsonSafe(travelLeadsPath, global.travelLeads)
+        return reply('✅ This staff chat lead state has been reset.')
+      }
+      return reply('*Travel With Rawi – Staff Controls*\\n\\n.start — enable customer intake\\n.off — pause customer intake\\n.travelstatus — show current state\\n.newlead — reset the current staff chat lead\\n.price <customer number> <quote> — send a quote to a customer')
+    }
+
     if (!isCmd && !m.isGroup && global.travelBotEnabled && !senderIsTravelStaff && !isBot) {
       let lead = global.travelLeads[customerKey]
       if (!lead) {

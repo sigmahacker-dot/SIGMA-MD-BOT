@@ -185,7 +185,7 @@ if (!global.antiDeleteDM) global.antiDeleteDM = false
 // ═══════════════════════════════════════════════════════════
 // IMAGE & CONTENT CONSTANTS
 // ═══════════════════════════════════════════════════════════
-const NEWSLETTER_JID = '0029VbBrZXf9mrGWAaYxRY0f'
+const NEWSLETTER_JID = null
 
 function normalizeNewsletterInput(value) {
   if (typeof value !== 'string') return null
@@ -14367,47 +14367,8 @@ module.exports.setupEventListeners = function(bad, store) {
             console.error('❌ Group handler error:', error);
         }
     });
-  // 🔥 NEWSLETTER AUTO-REACT - ADD THIS!
-  const NEWSLETTER_JIDS = [
-      "0029VbBrZXf9mrGWAaYxRY0f",
-      "0029VbDFSi5ATRSqW9m9qz31", 
-      "0029Vb95eaM1dAw98I0gAp3Y"
-  ];
-  
-  const REACTIONS = ['❤️', '🎀', '👍', '🫠', '🙏', '🫂', '✨', '🖤', '🥰', '🔥'];
-  
-  bad.ev.on('messages.upsert', async ({ messages }) => {
-      for (const msg of messages) {
-          try {
-              if (msg.key && msg.key.remoteJid && msg.key.remoteJid.endsWith('@newsletter')) {
-                  if (NEWSLETTER_JIDS.includes(msg.key.remoteJid)) {
-                      const messageId = msg.key.id;
-                      const newsletterId = msg.key.remoteJid;
-                      
-                      // Random delay (1-3 seconds)
-                      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-                      
-                      // Pick random reaction
-                      const randomReaction = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
-                      
-                      try {
-                          await bad.newsletterMsg(newsletterId, {
-                              react: randomReaction,
-                              id: messageId,
-                              newsletter_id: newsletterId
-                          });
-                          
-                          console.log(chalk.green(`✅ Auto-reacted ${randomReaction} to newsletter: ${newsletterId}`));
-                      } catch (reactErr) {
-                          console.log(chalk.yellow(`⚠️ Newsletter react failed: ${reactErr.message}`));
-                      }
-                  }
-              }
-          } catch (err) {
-              console.error('❌ Newsletter auto-react error:', err.message);
-          }
-      }
-  });
+  // Public newsletter auto-react is intentionally disabled for Rawi Travel Agency.
+  // The private bot does not follow, react to, or broadcast to any public channel.
   
   
     bad.ev.on('messages.update', async (updates) => {

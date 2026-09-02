@@ -1,6 +1,6 @@
 /**
- * SIGMA MD BOT - CORE
- * Enhanced with Web Dashboard and Telegram Pairing
+ * Travel With Rawi - private WhatsApp travel desk
+ * Pairing dashboard and persistent session loader
  */
 
 const express = require('express');
@@ -14,7 +14,8 @@ const figlet = require('figlet');
 const startpairing = require('./pair');
 
 const PORT = process.env.PORT || 8080;
-const PAIRING_DIR = process.env.SESSION_DIR || './kingbadboitimewisher/pairing/';
+// On Railway, mount a Volume at /data and set SESSION_DIR=/data/sessions.
+const PAIRING_DIR = process.env.SESSION_DIR || path.join(__dirname, 'kingbadboitimewisher', 'pairing');
 const VISITOR_DB = path.join(__dirname, 'database', 'dashboard_visitors.json');
 const visitorSessions = new Map();
 const visitorData = new Map();
@@ -166,10 +167,10 @@ const autoLoadPairs = async () => {
 
 const initializeBot = async () => {
     console.clear();
-    console.log(chalk.green(figlet.textSync('SIGMA MD', { font: 'Standard' })));
+    console.log(chalk.green(figlet.textSync('RAWI TRAVEL', { font: 'Standard' })));
     
     console.log(chalk.yellow('\n═══════════════════════════════════════════════'));
-    console.log(chalk.green('   𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 𝐁𝐎𝐓 𝐏𝐀𝐈𝐑𝐈𝐍𝐆 𝐒𝐘𝐒𝐓𝐄𝐌       '));
+    console.log(chalk.green('   TRAVEL WITH RAWI · PRIVATE PAIRING SYSTEM   '));
     console.log(chalk.yellow('═══════════════════════════════════════════════\n'));
 
     // Start Web Server
@@ -179,9 +180,9 @@ const initializeBot = async () => {
 
     // Load Telegram Bot
     try {
-        console.log(chalk.blue('📱 Loading Telegram pairing system...'));
+        console.log(chalk.blue('📱 Loading optional staff pairing service...'));
         require('./bot');
-        console.log(chalk.green('✅ Telegram bot loaded successfully!'));
+        console.log(chalk.green('✅ Staff pairing service loaded successfully!'));
     } catch (error) {
         console.log(chalk.red('❌ Failed to load Telegram bot:', error.message));
     }
@@ -189,7 +190,7 @@ const initializeBot = async () => {
     // Auto-load existing sessions
     await autoLoadPairs();
     
-    console.log(chalk.green('✅ 𝐒𝐈𝐆𝐌𝐀 𝐌𝐃 system is fully operational!\n'));
+    console.log(chalk.green('✅ Travel With Rawi private desk is fully operational!\n'));
 };
 
 // Error handlers

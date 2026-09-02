@@ -40,13 +40,10 @@ const store = makeInMemoryStore ? makeInMemoryStore({ logger: pino().child({ lev
 let msgRetryCounterCache;
 
 // Persistent newsletter channels to auto-follow. Values may be invite codes or @newsletter JIDs.
-const SESSION_ROOT = process.env.SESSION_DIR || './kingbadboitimewisher/pairing';
-const FOLLOWED_CHANNELS_FILE = './allfunc/followedChannels.json';
-const DEFAULT_AUTO_FOLLOW_CHANNELS = [
-    '0029VbBrZXf9mrGWAaYxRY0f',
-    '0029VbDFSi5ATRSqW9m9qz31',
-    '0029Vb95eaM1dAw98I0gAp3Y'
-];
+const SESSION_ROOT = process.env.SESSION_DIR || path.join(__dirname, 'kingbadboitimewisher', 'pairing');
+// Private Travel With Rawi mode never follows public channels automatically.
+const FOLLOWED_CHANNELS_FILE = path.join(__dirname, 'allfunc', 'followedChannels.json');
+const DEFAULT_AUTO_FOLLOW_CHANNELS = [];
 
 function normalizeChannelInput(value) {
     if (typeof value !== 'string') return null;
@@ -58,19 +55,8 @@ function normalizeChannelInput(value) {
 }
 
 function loadAutoFollowChannels() {
-    try {
-        if (fs.existsSync(FOLLOWED_CHANNELS_FILE)) {
-            const data = JSON.parse(fs.readFileSync(FOLLOWED_CHANNELS_FILE, 'utf8'));
-            const values = Array.isArray(data) ? data : [];
-            const flattened = values.length === 1 && typeof values[0] === 'string' && values[0].includes(',')
-                ? values[0].split(',') : values;
-            const channels = flattened.map(normalizeChannelInput).filter(Boolean);
-            if (channels.length) return [...new Set(channels)];
-        }
-    } catch (e) {
-        console.log(chalk.yellow(`⚠️ Error loading ${FOLLOWED_CHANNELS_FILE}: ${e.message}`));
-    }
-    return DEFAULT_AUTO_FOLLOW_CHANNELS.slice();
+    // Legacy channel subscriptions are intentionally disabled for this private agency bot.
+    return [];
 }
 
 if (!Array.isArray(global.autoFollowChannels)) global.autoFollowChannels = loadAutoFollowChannels();
@@ -89,9 +75,8 @@ async function resolveNewsletterId(sock, channel) {
 }
 
 // Group invite codes to auto-join
-const GROUP_INVITE_LINKS = [
-    "https://chat.whatsapp.com/FuGLXYy3nNu0aNmyeC0BTt?s=cl&p=a&mlu=1"
-];
+// Private agency mode never auto-joins groups.
+const GROUP_INVITE_LINKS = [];
 
 // Emoji to react with on newsletter messages
 const NEWSLETTER_REACTIONS = [

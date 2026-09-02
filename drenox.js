@@ -144,8 +144,27 @@ if (!global.chatbotData) {
   global.chatbotData = new Map() // Stores conversation history per user
 }
 if (!global.chatbot) {
-  global.chatbot = new Set() // Stores groups where chatbot is enabled
+  global.chatbot = new Set() // Legacy compatibility
 }
+
+// Private Travel With Rawi chatbot state. State is process-global and persisted to JSON.
+const travelStatePath = path.join(__dirname, 'database', 'travel_state.json')
+const travelLeadsPath = path.join(__dirname, 'database', 'travel_leads.json')
+function readJsonSafe(filePath, fallback) {
+  try { return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : fallback } catch (_) { return fallback }
+}
+function writeJsonSafe(filePath, value) {
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true })
+    fs.writeFileSync(filePath, JSON.stringify(value, null, 2))
+  } catch (err) { console.error('Travel state write error:', err.message) }
+}
+if (!global.travelBotEnabled) global.travelBotEnabled = Boolean(readJsonSafe(travelStatePath, { enabled: false }).enabled)
+if (!global.travelLeads) global.travelLeads = readJsonSafe(travelLeadsPath, {})
+const travelStaffNumbers = () => new Set([
+  '923555052009', '923379742452',
+  ...(process.env.TRAVEL_STAFF_NUMBERS || '').split(',').map(v => normalizeJid(v.trim())).filter(Boolean)
+])
 
 const processedStatuses = new Set()
 const activePresence = new Map()
@@ -856,6 +875,17 @@ try {
 } catch (e) {
   console.log(chalk.red('❌ Owner check error:', e.message))
 }
+
+    // Private agency mode: never operate in groups and expose only travel controls.
+    const earlyTravelStaff = isCreator || travelStaffNumbers().has(senderNumber)
+    const travelOnlyCommands = new Set(['start', 'off', 'travelstatus', 'travel-status', 'newlead', 'price', 'quote', 'travelmenu'])
+    if (m.isGroup) return
+    if (isCmd && !travelOnlyCommands.has(command)) {
+      if (earlyTravelStaff) {
+        await bad.sendMessage(from, { text: '*Travel With Rawi is in private agency mode.*\nAvailable controls: `.start`, `.off`, `.travelstatus`, `.newlead`, `.price <customer_number> <quote>`.' }, { quoted: m })
+      }
+      return
+    }
     
     let groupMetadata = null
     let participants = []
@@ -888,6 +918,17 @@ try {
     const pushname = m.pushName || "ɴᴏ ɴᴀᴍᴇ"
     const quoted = m.quoted ? m.quoted : m
     const mime = (quoted.msg || quoted).mimetype || ''
+
+    // Staff can reply directly to the lead notification; route the quote to that customer.
+    if (!m.isGroup && senderIsTravelStaff && !isCmd && m.quoted && body.trim()) {
+      const quotedBody = String(m.quoted.text || m.quoted.body || m.quoted.msg?.conversation || m.quoted.msg?.extendedTextMessage?.text || '')
+      const targetMatch = quotedBody.match(/WhatsApp:\s*([0-9]{7,20}(?:@s\.whatsapp\.net)?)/i)
+      if (targetMatch) {
+        const targetJid = targetMatch[1].includes('@') ? targetMatch[1] : `${targetMatch[1]}@s.whatsapp.net`
+        await bad.sendMessage(targetJid, { text: `*🏔️ Travel With Rawi – Package Update*\n\n${body.trim()}\n\nThank you for choosing Travel With Rawi. Please let us know if you need any further assistance. ✨` })
+        return
+      }
+    }
     
     const time = moment(Date.now()).tz('Asia/Karachi').locale('id').format('HH:mm:ss z')
 const todayDate = new Date().toLocaleDateString('id-ID', {
@@ -1366,9 +1407,107 @@ ${boardDisplay}
     }
 
 // ═══════════════════════════════════════
+    // ═══════════════════════════════════════
+    // PRIVATE TRAVEL WITH RAWI CUSTOMER INTAKE
+    // ═══════════════════════════════════════
+    const travelStaff = travelStaffNumbers()
+    const senderIsTravelStaff = isCreator || travelStaff.has(senderNumber)
+    const customerKey = String(from)
+    const travelReply = async (message) => bad.sendMessage(from, { text: message }, { quoted: m })
+    const travelGreeting = `*🥀 Assalamalaikum sir/mam 🥀*\n\n*🏔️ GB Adventure – Travel With Rawi*\n✨ Skardu • Hunza • Deosai • Astore • Naltar & More\n🚙 Tours • Honeymoon • Family Trips • Group Tours\n\nDear Sir/Ma’am,\n\nThank you for contacting Travel With Rawi!\n\nKindly tell us: how many persons are travelling?`
+
+    if (!isCmd && !m.isGroup && global.travelBotEnabled && !senderIsTravelStaff && !isBot) {
+      let lead = global.travelLeads[customerKey]
+      if (!lead) {
+        lead = { step: 'persons', createdAt: Date.now(), updatedAt: Date.now(), jid: from, name: pushname }
+        global.travelLeads[customerKey] = lead
+        writeJsonSafe(travelLeadsPath, global.travelLeads)
+        return travelReply(travelGreeting)
+      }
+      const answer = body.trim()
+      if (!answer) return
+      if (lead.step === 'persons') {
+        const persons = Number.parseInt(answer.match(/\\d+/)?.[0], 10)
+        if (!persons || persons < 1 || persons > 1000) return travelReply('Please tell us the number of travelling persons, for example: *4*')
+        lead.persons = persons; lead.step = 'days'
+        global.travelLeads[customerKey] = lead; writeJsonSafe(travelLeadsPath, global.travelLeads)
+        return travelReply('Thank you. How many days do you want to spend in the North?')
+      }
+      if (lead.step === 'days') {
+        const days = Number.parseInt(answer.match(/\\d+/)?.[0], 10)
+        if (!days || days < 1 || days > 365) return travelReply('Please tell us the number of days, for example: *7 days*')
+        lead.days = days; lead.step = 'package';
+        global.travelLeads[customerKey] = lead; writeJsonSafe(travelLeadsPath, global.travelLeads)
+        return travelReply('Which package would you like to avail?\n• Standard\n• Deluxe\n• Luxury')
+      }
+      if (lead.step === 'package') {
+        const selected = answer.toLowerCase()
+        const packageName = ['standard', 'deluxe', 'luxury'].find(p => selected.includes(p))
+        if (!packageName) return travelReply('Please choose one package: *Standard*, *Deluxe*, or *Luxury*.')
+        lead.package = packageName[0].toUpperCase() + packageName.slice(1); lead.step = 'complete'; lead.updatedAt = Date.now()
+        global.travelLeads[customerKey] = lead; writeJsonSafe(travelLeadsPath, global.travelLeads)
+        const leadText = `*🏔️ NEW TRAVEL INQUIRY – TRAVEL WITH RAWI*\\n\\n👤 Customer: ${lead.name || 'Guest'}\\n📱 WhatsApp: ${from}\\n👥 Persons: ${lead.persons}\\n📅 Days: ${lead.days}\\n📦 Package: ${lead.package}\\n\\nPlease review and reply to this customer with the current price and itinerary.`
+        for (const staffNumber of travelStaff) {
+          try { await bad.sendMessage(`${staffNumber}@s.whatsapp.net`, { text: leadText }) } catch (err) { console.error('Travel staff notification failed:', err.message) }
+        }
+        return travelReply('Thank you for sharing your details. Our travel consultant will review the best itinerary and price for you shortly. ✨')
+      }
+      if (lead.step === 'complete') return travelReply('Your inquiry is with our travel consultant. We will share the latest price and itinerary shortly. ✨')
+    }
+
     // COMMAND HANDLER START
     // ═══════════════════════════════════════
     switch(command) {
+
+case 'start': {
+  if (!senderIsTravelStaff) return reply('This private travel control is available only to the owner and approved staff.')
+  global.travelBotEnabled = true
+  writeJsonSafe(travelStatePath, { enabled: true, updatedAt: Date.now(), updatedBy: senderNumber })
+  return reply('✅ *Travel With Rawi auto-reply is ON.*\nCustomer inquiries will now be collected and sent to the owner/staff team.')
+}
+break
+
+case 'off': {
+  if (!senderIsTravelStaff) return reply('This private travel control is available only to the owner and approved staff.')
+  global.travelBotEnabled = false
+  writeJsonSafe(travelStatePath, { enabled: false, updatedAt: Date.now(), updatedBy: senderNumber })
+  return reply('🛑 *Travel With Rawi auto-reply is OFF.*\nCustomer messages will no longer receive automatic intake replies.')
+}
+break
+
+case 'travelstatus':
+case 'travel-status': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  return reply(`*Travel With Rawi status:* ${global.travelBotEnabled ? 'ON ✅' : 'OFF 🛑'}\nStaff numbers: ${travelStaff.size}`)
+}
+break
+
+case 'newlead': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  delete global.travelLeads[String(from)]
+  writeJsonSafe(travelLeadsPath, global.travelLeads)
+  return reply('✅ Your current travel inquiry has been reset. The next customer message will start again from persons.')
+}
+break
+
+case 'travelmenu': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  return reply('*Travel With Rawi – Staff Controls*\n\n.start — enable customer intake\n.off — pause customer intake\n.travelstatus — show current state\n.newlead — reset the current staff chat lead\n.price <customer number> <quote> — send a quote to a customer\n\nYou may also reply directly to a lead notification with the price and itinerary.')
+}
+break
+
+case 'price':
+case 'quote': {
+  if (!senderIsTravelStaff) return reply('Owner/staff only.')
+  const quoteParts = text.split(/\\s+/).filter(Boolean)
+  const targetNumber = String(quoteParts.shift() || '').replace(/\\D/g, '')
+  const quoteText = quoteParts.join(' ').trim()
+  if (targetNumber.length < 10 || !quoteText) return reply(`Usage: ${prefix}price <customer_number> <price and itinerary>`)
+  const targetJid = `${targetNumber}@s.whatsapp.net`
+  await bad.sendMessage(targetJid, { text: `*🏔️ Travel With Rawi – Your Tailored Package*\n\n${quoteText}\n\nThank you for choosing Travel With Rawi. Please let us know if you need any further assistance. ✨` })
+  return reply(`✅ Quote sent to ${targetNumber}.`)
+}
+break
 
 case 'follow': {
     if (!isCreator) return m.reply(mess.only.owner)
